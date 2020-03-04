@@ -36,8 +36,15 @@ plusMinus.FieldMinus.prototype.showEditor_ = function() {
   var oldMutationDom = block.mutationToDom();
   var oldMutation = oldMutationDom && Blockly.Xml.domToText(oldMutationDom);
 
-  // TODO: Add try catch for better logging.
-  block.minus(this.args_);
+  try {
+    block.minus(this.args_);
+  } catch (e) {
+    if (e instanceof TypeError) {
+      throw Error('Minus field was unable to find ".minus" function ' +
+          'on attached block: ' + block.toDevString());
+    }
+    throw e;
+  }
 
   var newMutationDom = block.mutationToDom();
   var newMutation = newMutationDom && Blockly.Xml.domToText(newMutationDom);

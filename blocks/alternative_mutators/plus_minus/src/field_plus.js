@@ -36,7 +36,15 @@ plusMinus.FieldPlus.prototype.showEditor_ = function() {
   var oldMutationDom = block.mutationToDom();
   var oldMutation = oldMutationDom && Blockly.Xml.domToText(oldMutationDom);
 
-  block.plus(this.args_);
+  try {
+    block.plus(this.args_);
+  } catch (e) {
+    if (e instanceof TypeError) {
+      throw Error('Plus field was unable to find ".plus" function ' +
+          'on attached block: ' + block.toDevString());
+    }
+    throw e;
+  }
 
   var newMutationDom = block.mutationToDom();
   var newMutation = newMutationDom && Blockly.Xml.domToText(newMutationDom);
