@@ -19,7 +19,7 @@
 plusMinus.FieldPlus = function(opt_args) {
   this.args_ = opt_args;
   return plusMinus.FieldPlus.superClass_.constructor.call(
-      this, 'media/plus.svg', 15, 15, '+');
+      this, 'media/plus.svg', 15, 15, '');
 };
 Blockly.utils.object.inherits(plusMinus.FieldPlus, Blockly.FieldImage);
 
@@ -36,15 +36,8 @@ plusMinus.FieldPlus.prototype.showEditor_ = function() {
   var oldMutationDom = block.mutationToDom();
   var oldMutation = oldMutationDom && Blockly.Xml.domToText(oldMutationDom);
 
-  try {
-    block.plus(this.args_);
-  } catch (e) {
-    if (e instanceof TypeError) {
-      throw Error('Plus field was unable to find ".plus" function ' +
-          'on attached block: ' + block.toDevString());
-    }
-    throw e;
-  }
+  // TODO: Should probably temp disable rendering. Not sure best way to do that.
+  block.plus(this.args_);
 
   var newMutationDom = block.mutationToDom();
   var newMutation = newMutationDom && Blockly.Xml.domToText(newMutationDom);

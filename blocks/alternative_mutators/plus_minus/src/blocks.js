@@ -589,6 +589,8 @@ procedureDefMutator = {
     this.appendDummyInput(id)
         .setAlign(Blockly.ALIGN_RIGHT)
         .appendField(new plusMinus.FieldMinus(id))
+        .appendField(new plusMinus.FieldUp(id))
+        .appendField(new plusMinus.FieldDown(id))
         .appendField('variable:')  // Untranslated!
         .appendField(nameField,  id);  // The name of the field is the var id.
   },

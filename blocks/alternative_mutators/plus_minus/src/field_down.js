@@ -5,29 +5,29 @@
  */
 
 /**
- * @fileoverview A field for a minus button used for mutation.
+ * @fileoverview A field for a plus button used for mutation.
  */
 'use strict';
 
 
 /**
- * Class for a minus button used for mutation.
- * @param opt_args Arguments to pass to the 'plus' function when the button
+ * Class for a plus button used for mutation.
+ * @param opt_args Arguements to pass to the 'plus' function when the button
  *    is clicked.
  * @constructor
  */
-plusMinus.FieldMinus = function(opt_args) {
+plusMinus.FieldDown = function(opt_args) {
   this.args_ = opt_args;
-  return plusMinus.FieldMinus.superClass_.constructor.call(
-      this, 'media/minus.svg', 15, 15, '');
+  return plusMinus.FieldDown.superClass_.constructor.call(
+      this, 'media/arrow-down.svg', 20, 20, '');
 };
-Blockly.utils.object.inherits(plusMinus.FieldMinus, Blockly.FieldImage);
+Blockly.utils.object.inherits(plusMinus.FieldDown, Blockly.FieldImage);
 
-plusMinus.FieldMinus.fromJson = function(options) {
-  return new plusMinus.FieldMinus(options['args']);
+plusMinus.FieldDown.fromJson = function(options) {
+  return new plusMinus.FieldDown(options['args']);
 };
 
-plusMinus.FieldMinus.prototype.showEditor_ = function() {
+plusMinus.FieldDown.prototype.showEditor_ = function() {
   // TODO: This is a dupe of the mutator code, anyway to unify?
   var block = this.getSourceBlock();
 
@@ -37,7 +37,7 @@ plusMinus.FieldMinus.prototype.showEditor_ = function() {
   var oldMutation = oldMutationDom && Blockly.Xml.domToText(oldMutationDom);
 
   // TODO: Should probably temp disable rendering. Not sure best way to do that.
-  block.minus(this.args_);
+  block.down(this.args_);
 
   var newMutationDom = block.mutationToDom();
   var newMutation = newMutationDom && Blockly.Xml.domToText(newMutationDom);
@@ -55,4 +55,4 @@ plusMinus.FieldMinus.prototype.showEditor_ = function() {
   }
 };
 
-Blockly.fieldRegistry.register('field_minus', plusMinus.FieldMinus);
+Blockly.fieldRegistry.register('field_down', plusMinus.FieldDown);
