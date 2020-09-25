@@ -87,6 +87,113 @@ export class GenericMap {
   }
 
   /**
+   * Binds the given genericType name to the explicitType name in the context
+   * of the blockId.
+   * @param {string} blockId The id of the block to bind the genericType within.
+   * @param {string} genericType The name of the generic type that we want to
+   *     bind to the explicit type.
+   * @param {string} explicitType The name of the explicit type we want to bind
+   *     the generic type to.
+   * @param {number} priority The priority of the binding. Higher priority
+   *     bindings override lower priority bindings.
+   * @private
+   */
+  bindToExplicit_(blockId, genericType, explicitType, priority) {
+    let queueMap = this.dependenciesMap_.get(blockId);
+    if (!queueMap) {
+      queueMap = new PriorityQueueMap();
+      this.dependenciesMap_.set(blockId, queueMap);
+    }
+    queueMap.bind(genericType, explicitType, priority);
+  }
+
+  /**
+   * Unbinds the given generic type name from the explicit type name in the
+   * context of the blockId.
+   * @param {string} blockId The the block to unbind the types in.
+   * @param {string} genericType The name of the generic type to unbind from the
+   *     explicit type.
+   * @param {string} explicitType The name of the explicit type to unbind from
+   *     the generic type.
+   * @param {number} priority The priority of the binding to remove.
+   * @private
+   */
+  unbindFromExplicit_(blockId, genericType, explicitType, priority) {
+    // TODO: Return true if the binding existed, false if it did not.
+    if (this.dependenciesMap_.has(blockId)) {
+      this.dependenciesMap_.get(blockId).unbind(
+          genericType, explicitType, priority);
+    }
+  }
+
+  /**
+   * Adds the dependerId and dependerType as a depender on the dependencyId
+   * and dependencyType. Depender info is used to unbind dependers from the
+   * dependency if it becomes necessary.
+   * @param {string} dependerId The block to add as a depender.
+   * @param {string} dependerType The type to add as a depender.
+   * @param {string} dependencyId The block to depend on.
+   * @param {string} dependencyType The type to depend on.
+   * @private
+   */
+  addDepender_(dependerId, dependerType, dependencyId, dependencyType) {
+    let types = this.dependenciesMap_.get(dependencyId);
+    if (!types) {
+      types = new Map();
+      this.dependersMap_.set(dependencyId, types);
+    }
+    let dependers = types.get(dependencyType);
+    if (!dependers) {
+      dependers = [];
+      types.set(dependencyType, dependers);
+    }
+    dependers.push(new DependerInfo(dependerId, dependerType, dependencyType));
+  }
+
+  /**
+   * Removes the dependerId and dependerType from the dependers on the
+   * dependencyId and dependencyType.
+   * @param {string} dependerId The block to remove as a depender.
+   * @param {string} dependerType The type to remove as a depender.
+   * @param {string} dependencyId The block that was being depended on.
+   * @param {string} dependencyType The type that was being depended on.
+   * @return {boolean} True if the dependency existed, false otherwise.
+   * @private
+   */
+  removeDepender_(dependerId, dependerType, dependencyId, dependencyType) {
+    const types = this.dependersMap_.get(dependencyId);
+    if (!types) {
+      return;
+    }
+    const dependers = types.get(dependencyType);
+    if (!dependers) {
+      return;
+    }
+    const index = dependers.findIndex((elem) => {
+      return elem.blockId == dependerId &&
+          elem.dependerType == dependerType &&
+          elem.dependencyType == dependencyType;
+    });
+    if (index != -1) {
+      dependers.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+
+  updateExplicit_(
+      blockId, genericType, newExplicitType, priority, dependencyId) {
+    const currExplicit = this.getExplicitType(blockId, genericType);
+    // Either do informConnectedBlocks, updateExplicit, or nothing, depending.
+  }
+
+  informConnectedBlocks_(blockId, genericType) {
+    // Go through each connect block and try to add a dependency.
+  }
+
+
+
+  /**
    * Binds the given dependerType name to the dependencyType's explicit type in
    * the context of the dependerId. Should only be called if the dependencyType
    * is currently bound to an explicit type in the context of its block.
