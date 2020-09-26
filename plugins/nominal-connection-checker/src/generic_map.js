@@ -81,90 +81,60 @@ export class GenericMap {
       return;
     }
 
-    const childBlock = this.workspace_.getBlockById(e.blockId);
-    const childCon = childBlock.outputConnection;
+    const childCon = this.workspace_.getBlockById(e.blockId).outputConnection;
     if (!childCon) {
       // Ignore statement blocks for now;
       return;
     }
     console.log('got event');
 
-    let parentBlock;
     let parentCon;
     let explicitFn;
     let genericFn;
     if (e.newParentId) {
       console.log('new parent');
-      parentBlock = this.workspace_.getBlockById(e.newParentId);
-      parentCon = parentBlock.getInput(e.newInputName).connection;
-      explicitFn = this.bindToExplicit.bind(this);
-      genericFn = (function(
-          dependerBlock,
-          dependerType,
-          dependencyBlock,
-          dependencyType,
-          priority
-      ) {
-        console.log(this);
-        console.log(
-            'adding depender', dependerBlock.id, 'to', dependencyBlock.id);
-        console.log('binding', dependerType, 'to',
-            this.getExplicitType(dependencyBlock.id, dependencyType));
-        this.addDepender_(
-            dependerBlock.id, dependerType, dependencyBlock.id, dependencyType);
-        this.bindToExplicit_(
-            dependerBlock.id,
-            dependencyType,
-            this.getExplicitType(dependencyBlock.id, dependencyType),
-            priority);
-      }).bind(this);
+      parentCon = this.workspace_.getBlockById(e.newParentId)
+          .getInput(e.newInputName).connection;
+      explicitFn = this.bindTypeToExplicit_.bind(this);
+      genericFn = this.bindTypeToGeneric_.bind(this);
     } else if (e.oldParentId) {
-      console.log('old parent');
+      /*console.log('old parent');
       parentBlock = this.workspace_.getBlockById(e.oldParentId);
       parentCon = parentBlock.getInput(e.oldInputName).connection;
-      explicitFn = this.unbindFromExplicit_.bind(this);
-      genericFn = (function(
-          dependerBlock,
-          dependerType,
-          dependencyBlock,
-          dependencyType,
-          priority
-      ) {
+      explicitFn = this.removeBinding_.bind(this);
+      genericFn = (
+          dependerBlock, dependerType, dependencyBlock, dependencyType, priority
+      ) => {
+        const dependencyExplicitType = this.getExplicitType(
+            dependencyBlock.id, dependencyType);
         this.removeDepender_(
             dependerBlock.id, dependerType, dependencyBlock.id, dependencyType);
-        this.unbindFromExplicit_(
-            dependerBlock.id,
-            dependencyType,
-            this.getExplicitType(dependencyBlock.id, dependencyType),
-            priority);
-      }).bind(this);
+        this.removeBinding_(
+            dependerBlock.id, dependerType, dependencyExplicitType, priority);
+      };*/
     } else {
       console.log('neither');
       return;
     }
 
-    const childCheck = childCon.getCheck()[0];
-    const parentCheck = parentCon.getCheck()[0];
     if (this.isExplicit(parentCon)) {
       if (this.isGeneric(childCon)) {
         console.log('child to explicit parnet');
-        explicitFn(childBlock.id, childCheck, parentCheck, OUTPUT_PRIORITY);
+        explicitFn(childCon, parentCon.getCheck()[0], OUTPUT_PRIORITY);
       }
     } else if (this.isExplicit(childCon)) {
       console.log('parent to explicit child');
-      explicitFn(parentBlock.id, parentCheck, childCheck, INPUT_PRIORITY);
+      explicitFn(parentCon, childCon.getCheck()[0], INPUT_PRIORITY);
     } else {
-      const parentIsBound = !!this.getExplicitType(parentBlock.id, parentCheck);
-      const childIsBound = !!this.getExplicitType(childBlock.id, childCheck);
+      const parentIsBound = !!this.getExplicitTypeOfConnection(parentCon);
+      const childIsBound = !!this.getExplicitTypeOfConnection(childCon);
       if (parentIsBound) {
         console.log('parent is bound');
-        genericFn(
-            childBlock, childCheck, parentBlock, parentCheck, OUTPUT_PRIORITY);
+        genericFn(childCon, parentCon, OUTPUT_PRIORITY);
       }
       if (childIsBound) {
         console.log('child is bound');
-        genericFn(
-            parentBlock, parentCheck, childBlock, childCheck, INPUT_PRIORITY);
+        genericFn(parentCon, childCon, INPUT_PRIORITY);
       }
     }
   }
@@ -194,6 +164,12 @@ export class GenericMap {
     return !this.isGeneric(connection);
   }
 
+  getExplicitTypeOfConnection(connection) {
+    return this.getExplicitType(
+        connection.getSourceBlock().id,
+        connection.getCheck()[0]);
+  }
+
   /**
    * Returns the name of the explicit type bound to the generic type in the
    * context of the given block, or undefined if the type is not bound.
@@ -219,8 +195,66 @@ export class GenericMap {
     return types[0];
   }
 
-  bindToExplicit(blockId, genericType, explicitType, priority) {
-    this.bindToExplicit_(blockId, genericType, explicitType, priority);
+  bindType(blockId, genericType, explicitType, priority) {
+    this.addBinding_(blockId, genericType, explicitType, priority);
+  }
+
+  bindTypeToGeneric_(dependerConnection, dependencyConnection, priority) {
+    const dependerBlock = dependerConnection.getSourceBlock();
+    const dependerType = dependerConnection.getCheck()[0];
+    const dependencyBlock = dependencyConnection.getSourceBlock();
+    const dependencyType = dependencyConnection.getCheck()[0];
+    const explicitType = this.getExplicitType(
+        dependencyBlock.id, dependencyType);
+
+    this.addDepender_(
+        dependerBlock.id, dependerType, dependencyBlock.id, dependencyType);
+    this.bindTypeToExplicit_(
+        dependerConnection, explicitType, priority, dependencyBlock);
+  }
+
+  bindTypeToExplicit_(
+      connection, explicitType, priority, dependencyBlock = undefined) {
+    const block = connection.getSourceBlock();
+    const genericType = connection.getCheck()[0];
+
+    const oldExplicit = this.getExplicitType(block.id, genericType);
+    this.addBinding_(block.id, genericType, explicitType, priority);
+    const newExplicit = this.getExplicitType(block.id, genericType);
+
+    if (oldExplicit == newExplicit) {
+      return;
+    }
+
+    if (!oldExplicit) {
+      console.log('first binding');
+      for (const child of block.getChildren()) {
+        if (child == dependencyBlock) {
+          continue;
+        }
+        const output = child.outputConnection;
+        if (!output) {
+          continue;
+        }
+        if (this.isGeneric(output)) {
+          console.log('binding child');
+          this.bindTypeToGeneric_(output, connection, OUTPUT_PRIORITY);
+        }
+      }
+
+      // Handle parent.
+      const parent = block.getParent();
+      if (!parent || parent == dependencyBlock) {
+        return;
+      }
+      const input = parent.getInputWithBlock(block).connection;
+      if (this.isGeneric(input)) {
+        console.log('binding parent');
+        this.bindTypeToGeneric_(input, connection, INPUT_PRIORITY);
+      }
+    } else {
+      // TODO: Inform dependers of the update.
+    }
   }
 
   /**
@@ -235,7 +269,7 @@ export class GenericMap {
    *     bindings override lower priority bindings.
    * @private
    */
-  bindToExplicit_(blockId, genericType, explicitType, priority) {
+  addBinding_(blockId, genericType, explicitType, priority) {
     let queueMap = this.dependenciesMap_.get(blockId);
     if (!queueMap) {
       queueMap = new PriorityQueueMap();
@@ -256,7 +290,7 @@ export class GenericMap {
    * @return {boolean} True if the binding existed, false if it did not.
    * @private
    */
-  unbindFromExplicit_(blockId, genericType, explicitType, priority) {
+  removeBinding_(blockId, genericType, explicitType, priority) {
     if (this.dependenciesMap_.has(blockId)) {
       return this.dependenciesMap_.get(blockId).unbind(
           genericType, explicitType, priority);
