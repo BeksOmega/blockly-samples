@@ -271,14 +271,14 @@ suite('NominalConnectionChecker', function() {
     test('Parent explicit, child bound sub', function() {
       const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
       const [identityOut, id] = this.getBlockOutput('static_identity');
-      this.genericMap.bindToExplicit(id, 'T', 'Dog', INPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Dog', INPUT_PRIORITY);
       this.assertCanConnect(milkMammalIn, identityOut);
     });
 
     test('Parent explicit, child bound super', function() {
       const [trainDogIn] = this.getBlockInput('static_train_dog');
       const [identityOut, id] = this.getBlockOutput('static_identity');
-      this.genericMap.bindToExplicit(id, 'T', 'Mammal', INPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Mammal', INPUT_PRIORITY);
       this.assertCannotConnect(trainDogIn, identityOut);
     });
 
@@ -297,44 +297,44 @@ suite('NominalConnectionChecker', function() {
     test('Parent unbound, child bound', function() {
       const [identityIn] = this.getBlockInput('static_identity');
       const [identityOut, id] = this.getBlockOutput('static_identity');
-      this.genericMap.bindToExplicit(id, 'T', 'Dog', INPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Dog', INPUT_PRIORITY);
       this.assertCanConnect(identityIn, identityOut);
     });
 
     test('Parent bound, child explicit sub', function() {
       const [identityIn, id] = this.getBlockInput('static_identity');
       const [dogOut] = this.getBlockOutput('static_dog');
-      this.genericMap.bindToExplicit(id, 'T', 'Mammal', OUTPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Mammal', OUTPUT_PRIORITY);
       this.assertCanConnect(identityIn, dogOut);
     });
 
     test('Parent bound, child explicit super', function() {
       const [identityIn, id] = this.getBlockInput('static_identity');
       const [mammalOut] = this.getBlockOutput('static_mammal');
-      this.genericMap.bindToExplicit(id, 'T', 'Dog', OUTPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Dog', OUTPUT_PRIORITY);
       this.assertCannotConnect(identityIn, mammalOut);
     });
 
     test('Parent bound, child unbound', function() {
       const [identityIn, id] = this.getBlockInput('static_identity');
       const [identityOut] = this.getBlockOutput('static_identity');
-      this.genericMap.bindToExplicit(id, 'T', 'Dog', OUTPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Dog', OUTPUT_PRIORITY);
       this.assertCanConnect(identityIn, identityOut);
     });
 
     test('Parent bound, child bound sub', function() {
       const [identityIn, inId] = this.getBlockInput('static_identity');
       const [identityOut, outId] = this.getBlockOutput('static_identity');
-      this.genericMap.bindToExplicit(inId, 'T', 'Mammal', OUTPUT_PRIORITY);
-      this.genericMap.bindToExplicit(outId, 'T', 'Dog', INPUT_PRIORITY);
+      this.genericMap.bindType(inId, 'T', 'Mammal', OUTPUT_PRIORITY);
+      this.genericMap.bindType(outId, 'T', 'Dog', INPUT_PRIORITY);
       this.assertCanConnect(identityIn, identityOut);
     });
 
     test('Parent bound, child bound super', function() {
       const [identityIn, inId] = this.getBlockInput('static_identity');
       const [identityOut, outId] = this.getBlockOutput('static_identity');
-      this.genericMap.bindToExplicit(inId, 'T', 'Dog', OUTPUT_PRIORITY);
-      this.genericMap.bindToExplicit(outId, 'T', 'Mammal', INPUT_PRIORITY);
+      this.genericMap.bindType(inId, 'T', 'Dog', OUTPUT_PRIORITY);
+      this.genericMap.bindType(outId, 'T', 'Mammal', INPUT_PRIORITY);
       this.assertCannotConnect(identityIn, identityOut);
     });
 
@@ -342,9 +342,9 @@ suite('NominalConnectionChecker', function() {
       const [selectRandomIn, id] = this.getBlockInput('static_select_random');
       const [dogOut] = this.getBlockOutput('static_dog');
       const [batOut] = this.getBlockOutput('static_bat');
-      this.genericMap.bindToExplicit(id, 'T', 'Mammal', OUTPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Mammal', OUTPUT_PRIORITY);
       this.assertCanConnect(selectRandomIn, dogOut);
-      this.genericMap.bindToExplicit(id, 'T', 'Dog', INPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Dog', INPUT_PRIORITY);
       // Expect the output binding to get priority.
       this.assertCanConnect(selectRandomIn, batOut);
     });
@@ -354,7 +354,7 @@ suite('NominalConnectionChecker', function() {
       const [dogOut] = this.getBlockOutput('static_dog');
       const [batOut] = this.getBlockOutput('static_bat');
       this.assertCanConnect(selectRandomIn, dogOut);
-      this.genericMap.bindToExplicit(id, 'T', 'Dog', INPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Dog', INPUT_PRIORITY);
 
       // TODO: Pick functionality.
       this.assertCanConnect(selectRandomIn, batOut);
@@ -364,16 +364,16 @@ suite('NominalConnectionChecker', function() {
     test('Parent explicit, child bound multiple explicit sub', function() {
       const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
       const [selectRandomOut, id] = this.getBlockOutput('static_select_random');
-      this.genericMap.bindToExplicit(id, 'T', 'Dog', INPUT_PRIORITY);
-      this.genericMap.bindToExplicit(id, 'T', 'Bat', INPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Dog', INPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Bat', INPUT_PRIORITY);
       this.assertCanConnect(milkMammalIn, selectRandomOut);
     });
 
     test('Parent explicit, child bound multiple explicit some sub', function() {
       const [launchFlyingIn] = this.getBlockInput('static_launch_flying');
       const [selectRandomOut, id] = this.getBlockOutput('static_select_random');
-      this.genericMap.bindToExplicit(id, 'T', 'Dog', INPUT_PRIORITY);
-      this.genericMap.bindToExplicit(id, 'T', 'Bat', INPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Dog', INPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Bat', INPUT_PRIORITY);
       this.assertCannotConnect(launchFlyingIn, selectRandomOut);
     });
   });
@@ -434,7 +434,7 @@ suite('NominalConnectionChecker', function() {
     test('Parent explicit, child bound', function() {
       const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
       const [identityOut, id] = this.getBlockOutput('static_identity');
-      this.genericMap.bindToExplicit(id, 'T', 'Dog', INPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Dog', INPUT_PRIORITY);
 
       milkMammalIn.connect(identityOut);
       this.clock.tick(1);
@@ -480,7 +480,7 @@ suite('NominalConnectionChecker', function() {
     test('Parent unbound, child bound', function() {
       const [identityIn] = this.getBlockInput('static_identity');
       const [identityOut, id] = this.getBlockOutput('static_identity');
-      this.genericMap.bindToExplicit(id, 'T', 'Dog', INPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Dog', INPUT_PRIORITY);
 
       identityIn.connect(identityOut);
       this.clock.tick(1);
@@ -500,7 +500,7 @@ suite('NominalConnectionChecker', function() {
     test('Parent bound, child explicit', function() {
       const [identityIn, id] = this.getBlockInput('static_identity');
       const [dogOut] = this.getBlockOutput('static_dog');
-      this.genericMap.bindToExplicit(id, 'T', 'Mammal', OUTPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Mammal', OUTPUT_PRIORITY);
 
       identityIn.connect(dogOut);
       this.clock.tick(1);
@@ -516,7 +516,7 @@ suite('NominalConnectionChecker', function() {
     test('Parent bound, child unbound', function() {
       const [identityIn, id] = this.getBlockInput('static_identity');
       const [identityOut] = this.getBlockOutput('static_identity');
-      this.genericMap.bindToExplicit(id, 'T', 'Dog', OUTPUT_PRIORITY);
+      this.genericMap.bindType(id, 'T', 'Dog', OUTPUT_PRIORITY);
 
       identityIn.connect(identityOut);
       this.clock.tick(1);
@@ -532,8 +532,8 @@ suite('NominalConnectionChecker', function() {
     test('Parent bound, child bound', function() {
       const [identityIn, inId] = this.getBlockInput('static_identity');
       const [identityOut, outId] = this.getBlockOutput('static_identity');
-      this.genericMap.bindToExplicit(inId, 'T', 'Mammal', OUTPUT_PRIORITY);
-      this.genericMap.bindToExplicit(outId, 'T', 'Dog', INPUT_PRIORITY);
+      this.genericMap.bindType(inId, 'T', 'Mammal', OUTPUT_PRIORITY);
+      this.genericMap.bindType(outId, 'T', 'Dog', INPUT_PRIORITY);
 
       identityIn.connect(identityOut);
       this.clock.tick(1);
