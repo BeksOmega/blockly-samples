@@ -60,8 +60,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    */
   init(hierarchyDef) {
     this.typeHierarchy_ = new TypeHierarchy(hierarchyDef);
-    // TODO: Check if we need to release this.
-    this.workspace_.addChangeListener(this.onChangeListener_.bind(this));
+    this.genericMap_.init();
   }
 
   /**
@@ -78,73 +77,6 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
       return true;
     }
     return typeHierarchy.typeFulfillsType(childType, parentType);
-  }
-
-  /**
-   * Listens to changes on the workspace, and handles things like binding and
-   * unbinding generic types to explicit types.
-   * @param {!Blockly.Event} e The current event.
-   * @private
-   */
-  onChangeListener_(e) {
-    if (e.type != Blockly.Events.BLOCK_MOVE) {
-      return;
-    }
-
-    const childBlock = this.workspace_.getBlockById(e.blockId);
-    const childCon = childBlock.outputConnection;
-    if (!childCon) {
-      // Ignore statement blocks for now;
-      return;
-    }
-
-    const genericMap = this.getGenericMap();
-    let parentBlock;
-    let parentCon;
-    let explicitFn;
-    let genericFn;
-    if (e.newParentId) {
-      parentBlock = this.workspace_.getBlockById(e.newParentId);
-      parentCon = parentBlock.getInput(e.newInputName).connection;
-      explicitFn = GenericMap.prototype.bindTypeToExplicit.bind(genericMap);
-      genericFn = GenericMap.prototype.bindTypeToGeneric.bind(genericMap);
-    } else if (e.oldParentId) {
-      parentBlock = this.workspace_.getBlockById(e.oldParentId);
-      parentCon = parentBlock.getInput(e.oldInputName).connection;
-      explicitFn = GenericMap.prototype.unbindTypeFromExplicit.bind(genericMap);
-      genericFn = GenericMap.prototype.unbindTypeFromGeneric.bind(genericMap);
-    } else {
-      return;
-    }
-
-    const childCheck = this.getCheck_(childCon);
-    const parentCheck = this.getCheck_(parentCon);
-    if (this.isExplicit_(parentCon)) {
-      if (this.isGeneric_(childCon)) {
-        explicitFn(childBlock.id, childCheck, parentCheck, OUTPUT_PRIORITY);
-      }
-    } else if (this.isExplicit_(childCon)) {
-      explicitFn(parentBlock.id, parentCheck, childCheck, INPUT_PRIORITY);
-    } else {
-      const parentIsBound = !!this.getBoundType_(parentCon);
-      const childIsBound = !!this.getBoundType_(childCon);
-      if (parentIsBound) {
-        genericFn(
-            childBlock.id,
-            childCheck,
-            parentBlock.id,
-            parentCheck,
-            OUTPUT_PRIORITY);
-      }
-      if (childIsBound) {
-        genericFn(
-            parentBlock.id,
-            parentCheck,
-            childBlock.id,
-            childCheck,
-            INPUT_PRIORITY);
-      }
-    }
   }
 
   /**
@@ -206,32 +138,6 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     return connection.getCheck()[0];
   }
 
-  /**
-   * Returns true if the connection has a generic connection check. False
-   * otherwise.
-   * @param {!Blockly.Connection} connection The connection to check for
-   *     generic-ness.
-   * @return {boolean} True if the connection has a generic connection check.
-   *     False otherwise.
-   * @private
-   */
-  isGeneric_(connection) {
-    const check = this.getCheck_(connection);
-    return typeof check == 'string' && check.length == 1;
-  }
-
-  /**
-   * Returns true if the connection has an explicit connection check. False
-   * otherwise.
-   * @param {!Blockly.Connection} connection The connection check to check for
-   *     explicit-ness.
-   * @return {boolean} True if the connection has an explicit connection check.
-   *     False otherwise.
-   * @private
-   */
-  isExplicit_(connection) {
-    return !this.isGeneric_(connection);
-  }
 
   /**
    * Returns the explicit type bound to the connection's connection check if one
@@ -260,7 +166,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    */
   getExplicitType_(connection) {
     const typeName = this.getCheck_(connection);
-    return this.isExplicit_(connection) ? typeName :
+    const genericMap = this.getGenericMap();
+    return genericMap.isExplicit(connection) ? typeName :
         this.getGenericMap().getExplicitType(
             connection.getSourceBlock().id, typeName);
   }

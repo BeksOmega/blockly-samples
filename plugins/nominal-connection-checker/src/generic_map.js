@@ -9,6 +9,7 @@
  */
 'use strict';
 
+import * as Blockly from 'blockly/core';
 import {PriorityQueueMap} from './priority_queue_map';
 
 /**
@@ -62,6 +63,138 @@ export class GenericMap {
   }
 
   /**
+   * Initializes the generic map.
+   */
+  init() {
+    // TODO: Check if we need to release this.
+    this.workspace_.addChangeListener(this.onChangeListener_.bind(this));
+  }
+
+  /**
+   * Listens to changes on the workspace, and handles things like binding and
+   * unbinding generic types to explicit types.
+   * @param {!Blockly.Event} e The current event.
+   * @private
+   */
+  onChangeListener_(e) {
+    if (e.type != Blockly.Events.BLOCK_MOVE) {
+      return;
+    }
+
+    const childBlock = this.workspace_.getBlockById(e.blockId);
+    const childCon = childBlock.outputConnection;
+    if (!childCon) {
+      // Ignore statement blocks for now;
+      return;
+    }
+    console.log('got event');
+
+    let parentBlock;
+    let parentCon;
+    let explicitFn;
+    let genericFn;
+    if (e.newParentId) {
+      console.log('new parent');
+      parentBlock = this.workspace_.getBlockById(e.newParentId);
+      parentCon = parentBlock.getInput(e.newInputName).connection;
+      explicitFn = this.bindToExplicit.bind(this);
+      genericFn = (function(
+          dependerBlock,
+          dependerType,
+          dependencyBlock,
+          dependencyType,
+          priority
+      ) {
+        console.log(this);
+        console.log(
+            'adding depender', dependerBlock.id, 'to', dependencyBlock.id);
+        console.log('binding', dependerType, 'to',
+            this.getExplicitType(dependencyBlock.id, dependencyType));
+        this.addDepender_(
+            dependerBlock.id, dependerType, dependencyBlock.id, dependencyType);
+        this.bindToExplicit_(
+            dependerBlock.id,
+            dependencyType,
+            this.getExplicitType(dependencyBlock.id, dependencyType),
+            priority);
+      }).bind(this);
+    } else if (e.oldParentId) {
+      console.log('old parent');
+      parentBlock = this.workspace_.getBlockById(e.oldParentId);
+      parentCon = parentBlock.getInput(e.oldInputName).connection;
+      explicitFn = this.unbindFromExplicit_.bind(this);
+      genericFn = (function(
+          dependerBlock,
+          dependerType,
+          dependencyBlock,
+          dependencyType,
+          priority
+      ) {
+        this.removeDepender_(
+            dependerBlock.id, dependerType, dependencyBlock.id, dependencyType);
+        this.unbindFromExplicit_(
+            dependerBlock.id,
+            dependencyType,
+            this.getExplicitType(dependencyBlock.id, dependencyType),
+            priority);
+      }).bind(this);
+    } else {
+      console.log('neither');
+      return;
+    }
+
+    const childCheck = childCon.getCheck()[0];
+    const parentCheck = parentCon.getCheck()[0];
+    if (this.isExplicit(parentCon)) {
+      if (this.isGeneric(childCon)) {
+        console.log('child to explicit parnet');
+        explicitFn(childBlock.id, childCheck, parentCheck, OUTPUT_PRIORITY);
+      }
+    } else if (this.isExplicit(childCon)) {
+      console.log('parent to explicit child');
+      explicitFn(parentBlock.id, parentCheck, childCheck, INPUT_PRIORITY);
+    } else {
+      const parentIsBound = !!this.getExplicitType(parentBlock.id, parentCheck);
+      const childIsBound = !!this.getExplicitType(childBlock.id, childCheck);
+      if (parentIsBound) {
+        console.log('parent is bound');
+        genericFn(
+            childBlock, childCheck, parentBlock, parentCheck, OUTPUT_PRIORITY);
+      }
+      if (childIsBound) {
+        console.log('child is bound');
+        genericFn(
+            parentBlock, parentCheck, childBlock, childCheck, INPUT_PRIORITY);
+      }
+    }
+  }
+
+  /**
+   * Returns true if the connection has a generic connection check. False
+   * otherwise.
+   * @param {!Blockly.Connection} connection The connection to check for
+   *     generic-ness.
+   * @return {boolean} True if the connection has a generic connection check.
+   *     False otherwise.
+   */
+  isGeneric(connection) {
+    const check = connection.getCheck()[0];
+    return typeof check == 'string' && check.length == 1;
+  }
+
+  /**
+   * Returns true if the connection has an explicit connection check. False
+   * otherwise.
+   * @param {!Blockly.Connection} connection The connection check to check for
+   *     explicit-ness.
+   * @return {boolean} True if the connection has an explicit connection check.
+   *     False otherwise.
+   */
+  isExplicit(connection) {
+    return !this.isGeneric(connection);
+  }
+
+  /**
    * Returns the name of the explicit type bound to the generic type in the
    * context of the given block, or undefined if the type is not bound.
    * @param {string} blockId The block id that the generic type is
@@ -84,6 +217,10 @@ export class GenericMap {
     // In the future we might add logic to figure out what the super type of all
     // of the types is. But for now there should only be one type bound anyway.
     return types[0];
+  }
+
+  bindToExplicit(blockId, genericType, explicitType, priority) {
+    this.bindToExplicit_(blockId, genericType, explicitType, priority);
   }
 
   /**
@@ -116,14 +253,15 @@ export class GenericMap {
    * @param {string} explicitType The name of the explicit type to unbind from
    *     the generic type.
    * @param {number} priority The priority of the binding to remove.
+   * @return {boolean} True if the binding existed, false if it did not.
    * @private
    */
   unbindFromExplicit_(blockId, genericType, explicitType, priority) {
-    // TODO: Return true if the binding existed, false if it did not.
     if (this.dependenciesMap_.has(blockId)) {
-      this.dependenciesMap_.get(blockId).unbind(
+      return this.dependenciesMap_.get(blockId).unbind(
           genericType, explicitType, priority);
     }
+    return false;
   }
 
   /**
@@ -137,7 +275,7 @@ export class GenericMap {
    * @private
    */
   addDepender_(dependerId, dependerType, dependencyId, dependencyType) {
-    let types = this.dependenciesMap_.get(dependencyId);
+    let types = this.dependersMap_.get(dependencyId);
     if (!types) {
       types = new Map();
       this.dependersMap_.set(dependencyId, types);
@@ -181,17 +319,6 @@ export class GenericMap {
     return false;
   }
 
-  updateExplicit_(
-      blockId, genericType, newExplicitType, priority, dependencyId) {
-    const currExplicit = this.getExplicitType(blockId, genericType);
-    // Either do informConnectedBlocks, updateExplicit, or nothing, depending.
-  }
-
-  informConnectedBlocks_(blockId, genericType) {
-    // Go through each connect block and try to add a dependency.
-  }
-
-
 
   /**
    * Binds the given dependerType name to the dependencyType's explicit type in
@@ -211,7 +338,7 @@ export class GenericMap {
    * @param {number} priority The priority of the binding. Higher priority
    *     bindings override lower priority bindings.
    */
-  bindTypeToGeneric(
+  /*bindTypeToGeneric(
       dependerId, dependerType, dependencyId, dependencyType, priority) {
     if (!this.workspace_.getBlockById(dependerId)) {
       throw Error(
@@ -241,7 +368,7 @@ export class GenericMap {
       types.set(dependencyType, dependers);
     }
     dependers.push(new DependerInfo(dependerId, dependerType, dependencyType));
-  }
+  }*/
 
   /**
    * Binds the given genericType name to the explicitType name in the context
@@ -254,7 +381,7 @@ export class GenericMap {
    * @param {number} priority The priority of the binding. Higher priority
    *     bindings ovveride lower priority bindings.
    */
-  bindTypeToExplicit(blockId, genericType, explicitType, priority) {
+  /*bindTypeToExplicit(blockId, genericType, explicitType, priority) {
     let queueMap = this.dependenciesMap_.get(blockId);
     if (!queueMap) {
       queueMap = new PriorityQueueMap();
@@ -264,7 +391,7 @@ export class GenericMap {
 
     // TODO: Flow through all other connections if necessary.
     //   Make sure to update them if we get a higher priority binding.
-  }
+  }*/
 
   /**
    * Unbinds the given dependerType name from the dependencyType's explicit type
@@ -281,7 +408,7 @@ export class GenericMap {
    *     dependency block that we want to unbind the dependerType from.
    * @param {number} priority The priority of the binding to remove.
    */
-  unbindTypeFromGeneric(
+  /*unbindTypeFromGeneric(
       dependerId, dependerType, dependencyId, dependencyType, priority) {
     const types = this.dependersMap_.get(dependencyId);
     if (!types) {
@@ -302,7 +429,7 @@ export class GenericMap {
           dependerId, dependerType, explicitType, priority);
       dependers.splice(index, 1);
     }
-  }
+  }*/
 
   /**
    * Unbinds the given generic type name from the explicit type name in the
@@ -314,13 +441,13 @@ export class GenericMap {
    *     the generic type.
    * @param {number} priority The priority of the binding to remove.
    */
-  unbindTypeFromExplicit(blockId, genericType, explicitType, priority) {
+  /*unbindTypeFromExplicit(blockId, genericType, explicitType, priority) {
     if (this.dependenciesMap_.has(blockId)) {
       this.dependenciesMap_.get(blockId).unbind(
           genericType, explicitType, priority);
     }
     // TODO: Flow through all other connections.
-  }
+  }*/
 }
 
 /**
