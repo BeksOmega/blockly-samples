@@ -77,6 +77,7 @@ export class GenericMap {
    * @private
    */
   onChangeListener_(e) {
+    console.log(e);
     if (e.type != Blockly.Events.BLOCK_MOVE) {
       return;
     }
@@ -92,7 +93,6 @@ export class GenericMap {
     let explicitFn;
     let genericFn;
     if (e.newParentId) {
-      console.log('new parent');
       parentCon = this.workspace_.getBlockById(e.newParentId)
           .getInput(e.newInputName).connection;
       explicitFn = this.bindTypeToExplicit_.bind(this);
@@ -113,27 +113,24 @@ export class GenericMap {
             dependerBlock.id, dependerType, dependencyExplicitType, priority);
       };*/
     } else {
-      console.log('neither');
       return;
     }
 
     if (this.isExplicit(parentCon)) {
       if (this.isGeneric(childCon)) {
-        console.log('child to explicit parnet');
+        console.log('child generic');
         explicitFn(childCon, parentCon.getCheck()[0], OUTPUT_PRIORITY);
       }
     } else if (this.isExplicit(childCon)) {
-      console.log('parent to explicit child');
+      console.log('parent generic');
       explicitFn(parentCon, childCon.getCheck()[0], INPUT_PRIORITY);
     } else {
       const parentIsBound = !!this.getExplicitTypeOfConnection(parentCon);
       const childIsBound = !!this.getExplicitTypeOfConnection(childCon);
       if (parentIsBound) {
-        console.log('parent is bound');
         genericFn(childCon, parentCon, OUTPUT_PRIORITY);
       }
       if (childIsBound) {
-        console.log('child is bound');
         genericFn(parentCon, childCon, INPUT_PRIORITY);
       }
     }
@@ -199,6 +196,10 @@ export class GenericMap {
     this.addBinding_(blockId, genericType, explicitType, priority);
   }
 
+  unbindType(blockId, genericType, explicitType, priority) {
+    this.removeBinding_(blockId, genericType, explicitType, priority);
+  }
+
   bindTypeToGeneric_(dependerConnection, dependencyConnection, priority) {
     const dependerBlock = dependerConnection.getSourceBlock();
     const dependerType = dependerConnection.getCheck()[0];
@@ -227,33 +228,24 @@ export class GenericMap {
     }
 
     if (!oldExplicit) {
-      console.log('first binding');
-      for (const child of block.getChildren()) {
-        if (child == dependencyBlock) {
+      // I've just become something that can be depended on, inform all
+      // connected blocks.
+      const connections = block.getChildren()
+          .map((block) => block.outputConnection);
+      connections.push(block.outputConnection &&
+          block.outputConnection.targetConnection);
+      for (const con of connections) {
+        if (!con || con.getSourceBlock() == dependencyBlock) {
           continue;
         }
-        const output = child.outputConnection;
-        if (!output) {
-          continue;
+        if (this.isGeneric(con)) {
+          this.bindTypeToGeneric_(con, connection, OUTPUT_PRIORITY);
         }
-        if (this.isGeneric(output)) {
-          console.log('binding child');
-          this.bindTypeToGeneric_(output, connection, OUTPUT_PRIORITY);
-        }
-      }
-
-      // Handle parent.
-      const parent = block.getParent();
-      if (!parent || parent == dependencyBlock) {
-        return;
-      }
-      const input = parent.getInputWithBlock(block).connection;
-      if (this.isGeneric(input)) {
-        console.log('binding parent');
-        this.bindTypeToGeneric_(input, connection, INPUT_PRIORITY);
       }
     } else {
-      // TODO: Inform dependers of the update.
+      // My explicit type has changed, so I need to inform all blocks that are
+      // depending on me.
+
     }
   }
 
