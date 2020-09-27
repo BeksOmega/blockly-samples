@@ -77,7 +77,6 @@ export class GenericMap {
    * @private
    */
   onChangeListener_(e) {
-    console.log(e);
     if (e.type != Blockly.Events.BLOCK_MOVE) {
       return;
     }
@@ -209,7 +208,11 @@ export class GenericMap {
         dependencyBlock.id, dependencyType);
 
     this.addDepender_(
-        dependerBlock.id, dependerType, dependencyBlock.id, dependencyType);
+        dependerBlock.id,
+        dependerType,
+        dependencyBlock.id,
+        dependencyType,
+        priority);
     this.bindTypeToExplicit_(
         dependerConnection, explicitType, priority, dependencyBlock);
   }
@@ -230,22 +233,59 @@ export class GenericMap {
     if (!oldExplicit) {
       // I've just become something that can be depended on, inform all
       // connected blocks.
-      const connections = block.getChildren()
-          .map((block) => block.outputConnection);
-      connections.push(block.outputConnection &&
-          block.outputConnection.targetConnection);
-      for (const con of connections) {
+      const informConnection = (con, priority) => {
         if (!con || con.getSourceBlock() == dependencyBlock) {
-          continue;
+          return;
         }
         if (this.isGeneric(con)) {
-          this.bindTypeToGeneric_(con, connection, OUTPUT_PRIORITY);
+          this.bindTypeToGeneric_(con, connection, priority);
         }
+      };
+
+      for (const child of block.getChildren()) {
+        informConnection(child.outputConnection, OUTPUT_PRIORITY);
       }
+      informConnection(block.outputConnection &&
+          block.outputConnection.targetConnection, INPUT_PRIORITY);
     } else {
       // My explicit type has changed, so I need to inform all blocks that are
       // depending on me.
+      const types = this.dependersMap_.get(block.id);
+      if (!types) {
+        return;
+      }
+      const dependers = types.get(genericType);
+      if (!dependers) {
+        return;
+      }
+      for (const dependerInfo of dependers) {
+        this.updateDepender_(dependerInfo, oldExplicit, newExplicit);
+      }
+    }
+  }
 
+  updateDepender_(dependerInfo, oldExplicit, newExplicit) {
+    const {blockId, dependerType, priority} = dependerInfo;
+    const myOldExplicit = this.getExplicitType(blockId, dependerType);
+    this.removeBinding_(blockId, dependerType, oldExplicit, priority);
+    this.addBinding_(blockId, dependerType, newExplicit, priority);
+    const myNewExplicit = this.getExplicitType(blockId, dependerType);
+
+    if (myOldExplicit == myNewExplicit) {
+      return;
+    }
+    // TODO: Make the dependersMap_ its own abstract data type so that we can
+    //   de-duplicate some of this junk.
+    const types = this.dependersMap_.get(blockId);
+    if (!types) {
+      return;
+    }
+    const dependers = types.get(dependerType);
+    if (!dependers) {
+      return;
+    }
+    for (const dependerInfo of dependers) {
+      this.updateDepender_(dependerInfo, myOldExplicit, myNewExplicit);
     }
   }
 
@@ -300,7 +340,8 @@ export class GenericMap {
    * @param {string} dependencyType The type to depend on.
    * @private
    */
-  addDepender_(dependerId, dependerType, dependencyId, dependencyType) {
+  addDepender_(
+      dependerId, dependerType, dependencyId, dependencyType, priority) {
     let types = this.dependersMap_.get(dependencyId);
     if (!types) {
       types = new Map();
@@ -311,7 +352,8 @@ export class GenericMap {
       dependers = [];
       types.set(dependencyType, dependers);
     }
-    dependers.push(new DependerInfo(dependerId, dependerType, dependencyType));
+    dependers.push(new DependerInfo(
+        dependerId, dependerType, dependencyType, priority));
   }
 
   /**
@@ -489,9 +531,10 @@ class DependerInfo {
    * @param {string} dependencyType The generic type on the other block that the
    *     dependerType is depending on.
    */
-  constructor(blockId, dependerType, dependencyType) {
+  constructor(blockId, dependerType, dependencyType, priority) {
     this.blockId = blockId;
     this.dependerType = dependerType;
     this.dependencyType = dependencyType;
+    this.priority = priority;
   }
 }
