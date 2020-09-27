@@ -97,10 +97,10 @@ export class GenericMap {
       explicitFn = this.bindTypeToExplicit_.bind(this);
       genericFn = this.bindTypeToGeneric_.bind(this);
     } else if (e.oldParentId) {
-      /*console.log('old parent');
-      parentBlock = this.workspace_.getBlockById(e.oldParentId);
-      parentCon = parentBlock.getInput(e.oldInputName).connection;
-      explicitFn = this.removeBinding_.bind(this);
+      console.log('old parent');
+      parentCon = this.workspace_.getBlockById(e.oldParentId)
+          .getInput(e.oldInputName).connection;
+      explicitFn = this.unbindTypeFromExplicit_.bind(this);
       genericFn = (
           dependerBlock, dependerType, dependencyBlock, dependencyType, priority
       ) => {
@@ -110,7 +110,7 @@ export class GenericMap {
             dependerBlock.id, dependerType, dependencyBlock.id, dependencyType);
         this.removeBinding_(
             dependerBlock.id, dependerType, dependencyExplicitType, priority);
-      };*/
+      };
     } else {
       return;
     }
@@ -200,16 +200,13 @@ export class GenericMap {
   }
 
   bindTypeToGeneric_(dependerConnection, dependencyConnection, priority) {
-    const dependerBlock = dependerConnection.getSourceBlock();
-    const dependerType = dependerConnection.getCheck()[0];
     const dependencyBlock = dependencyConnection.getSourceBlock();
     const dependencyType = dependencyConnection.getCheck()[0];
     const explicitType = this.getExplicitType(
         dependencyBlock.id, dependencyType);
 
     this.addDepender_(
-        dependerBlock.id,
-        dependerType,
+        dependerConnection,
         dependencyBlock.id,
         dependencyType,
         priority);
@@ -231,8 +228,8 @@ export class GenericMap {
     }
 
     if (!oldExplicit) {
-      // I've just become something that can be depended on, inform all
-      // connected blocks.
+      // The generic type has just become something that can be depended on,
+      // inform all connected blocks.
       const informConnection = (con, priority) => {
         if (!con || con.getSourceBlock() == dependencyBlock) {
           return;
@@ -248,8 +245,8 @@ export class GenericMap {
       informConnection(block.outputConnection &&
           block.outputConnection.targetConnection, INPUT_PRIORITY);
     } else {
-      // My explicit type has changed, so I need to inform all blocks that are
-      // depending on me.
+      // The generic type's explicit type has changed, inform all blocks that
+      // are depending on it.
       const types = this.dependersMap_.get(block.id);
       if (!types) {
         return;
@@ -261,6 +258,69 @@ export class GenericMap {
       for (const dependerInfo of dependers) {
         this.updateDepender_(dependerInfo, oldExplicit, newExplicit);
       }
+    }
+  }
+
+  unbindTypeFromGeneric_(
+      dependerConnection,
+      dependencyConnection,
+      priority,
+      explicitType = undefined) {
+    const dependencyBlock = dependencyConnection.getSourceBlock();
+    const dependencyType = dependencyConnection.getCheck()[0];
+    explicitType = explicitType || this.getExplicitTypeOfConnection(
+        dependencyConnection);
+    console.log(dependencyBlock.id, explicitType);
+
+    this.removeDepender_(
+        dependerConnection,
+        dependencyBlock.id,
+        dependencyType,
+        priority);
+    // TODO: do we need to pass the dependency connection/block here?
+    //  not for only having one dependency
+    this.unbindTypeFromExplicit_(dependerConnection, explicitType, priority);
+  }
+
+  unbindTypeFromExplicit_(
+      connection, explicitType, priority) {
+    console.log('unbinding');
+    const block = connection.getSourceBlock();
+    const genericType = connection.getCheck()[0];
+
+    const oldExplicit = this.getExplicitType(block.id, genericType);
+    this.removeBinding_(block.id, genericType, explicitType, priority);
+    const newExplicit = this.getExplicitType(block.id, genericType);
+    console.log(block.id, newExplicit);
+
+    if (oldExplicit == newExplicit) {
+      return;
+    }
+    console.log('different');
+
+    const types = this.dependersMap_.get(block.id);
+    if (!types) {
+      return;
+    }
+    const dependers = types.get(genericType);
+    if (!dependers) {
+      return;
+    }
+
+    console.log('got dependers', dependers);
+
+    if (!newExplicit) {
+      console.log('no new type');
+      // The generic type is no longer dependable (since it doesn't have an
+      // explicit type). Remove all dependers.
+      for (const {connection: con, blockId, priority} of dependers) {
+        console.log('calling on', blockId, block.id);
+        this.unbindTypeFromGeneric_(con, connection, priority, oldExplicit);
+      }
+    } else {
+      console.log('some new type');
+      // If we have a single dependency, make sure it is not a depender.
+      // Then update all dependers.
     }
   }
 
@@ -341,7 +401,7 @@ export class GenericMap {
    * @private
    */
   addDepender_(
-      dependerId, dependerType, dependencyId, dependencyType, priority) {
+      dependerConnection, dependencyId, dependencyType, priority) {
     let types = this.dependersMap_.get(dependencyId);
     if (!types) {
       types = new Map();
@@ -353,7 +413,7 @@ export class GenericMap {
       types.set(dependencyType, dependers);
     }
     dependers.push(new DependerInfo(
-        dependerId, dependerType, dependencyType, priority));
+        dependerConnection, priority));
   }
 
   /**
@@ -366,7 +426,7 @@ export class GenericMap {
    * @return {boolean} True if the dependency existed, false otherwise.
    * @private
    */
-  removeDepender_(dependerId, dependerType, dependencyId, dependencyType) {
+  removeDepender_(dependerConnection, dependencyId, dependencyType, priority) {
     const types = this.dependersMap_.get(dependencyId);
     if (!types) {
       return;
@@ -376,9 +436,7 @@ export class GenericMap {
       return;
     }
     const index = dependers.findIndex((elem) => {
-      return elem.blockId == dependerId &&
-          elem.dependerType == dependerType &&
-          elem.dependencyType == dependencyType;
+      return elem.connection == dependerConnection;
     });
     if (index != -1) {
       dependers.splice(index, 1);
@@ -531,10 +589,10 @@ class DependerInfo {
    * @param {string} dependencyType The generic type on the other block that the
    *     dependerType is depending on.
    */
-  constructor(blockId, dependerType, dependencyType, priority) {
-    this.blockId = blockId;
-    this.dependerType = dependerType;
-    this.dependencyType = dependencyType;
+  constructor(connection, dependencyType, priority) {
+    this.connection = connection;
+    this.blockId = connection.getSourceBlock().id;
+    this.dependerType = connection.getCheck()[0];
     this.priority = priority;
   }
 }
