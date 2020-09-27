@@ -858,6 +858,229 @@ suite('GenericMap', function() {
       });
     });
 
+    suite('Update dependents', function() {
+      test('No update', function() {
+        const [selectRandomIn1, , selectRandom] =
+            this.getBlockInput('static_select_random');
+        const selectRandomIn2 = selectRandom.getInput('INPUT2').connection;
+        const selectRandomOut = selectRandom.outputConnection;
+        const [dogOut] = this.getBlockOutput('static_dog');
+        const [identityOut] = this.getBlockOutput('static_identity');
+        const [trainDogIn] = this.getBlockInput('static_train_dog');
+
+        selectRandomIn1.connect(identityOut);
+        this.clock.tick(1);
+        this.assertNoBinding(selectRandomIn1);
+        this.assertNoBinding(identityOut);
+
+        selectRandomIn2.connect(dogOut);
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Dog');
+        this.assertHasBinding(identityOut, 'Dog');
+
+        trainDogIn.connect(selectRandomOut);
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Dog');
+        this.assertHasBinding(identityOut, 'Dog');
+
+        /*trainDogIn.disconnect();
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Dog');
+        this.assertHasBinding(identityOut, 'Dog');
+
+        selectRandomIn2.disconnect();
+        this.clock.tick(1);
+        this.assertNoBinding(selectRandomIn1);
+        this.assertNoBinding(identityOut);*/
+      });
+
+      test('Update children, explicit', function() {
+        const [selectRandomIn1, , selectRandom] =
+            this.getBlockInput('static_select_random');
+        const selectRandomIn2 = selectRandom.getInput('INPUT2').connection;
+        const selectRandomOut = selectRandom.outputConnection;
+        const [dogOut] = this.getBlockOutput('static_dog');
+        const [identityOut] = this.getBlockOutput('static_identity');
+        const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
+
+        selectRandomIn1.connect(identityOut);
+        this.clock.tick(1);
+        this.assertNoBinding(selectRandomIn1);
+        this.assertNoBinding(identityOut);
+
+        selectRandomIn2.connect(dogOut);
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Dog');
+        this.assertHasBinding(identityOut, 'Dog');
+
+        milkMammalIn.connect(selectRandomOut);
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Mammal');
+        this.assertHasBinding(identityOut, 'Mammal');
+
+        /*milkMammalIn.disconnect();
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Dog');
+        this.assertHasBinding(identityOut, 'Dog');
+
+        selectRandomIn2.disconnect();
+        this.clock.tick(1);
+        this.assertNoBinding(selectRandomIn1);
+        this.assertNoBinding(identityOut);*/
+      });
+
+      test('Update children, bound', function() {
+        const [selectRandomIn1, , selectRandom] =
+            this.getBlockInput('static_select_random');
+        const selectRandomIn2 = selectRandom.getInput('INPUT2').connection;
+        const selectRandomOut = selectRandom.outputConnection;
+        const [dogOut] = this.getBlockOutput('static_dog');
+        const [identityOut] = this.getBlockOutput('static_identity');
+        const [identityIn, id] = this.getBlockInput('static_identity');
+        this.genericMap.bindType(id, 'T', 'Mammal', OUTPUT_PRIORITY);
+
+        selectRandomIn1.connect(identityOut);
+        this.clock.tick(1);
+        this.assertNoBinding(selectRandomIn1);
+        this.assertNoBinding(identityOut);
+
+        selectRandomIn2.connect(dogOut);
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Dog');
+        this.assertHasBinding(identityOut, 'Dog');
+
+        identityIn.connect(selectRandomOut);
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Mammal');
+        this.assertHasBinding(identityOut, 'Mammal');
+
+        /*identityIn.disconnect();
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Dog');
+        this.assertHasBinding(identityOut, 'Dog');
+
+        selectRandomIn2.disconnect();
+        this.clock.tick(1);
+        this.assertNoBinding(selectRandomIn1);
+        this.assertNoBinding(identityOut);*/
+      });
+
+      test('Update far descendants, explicit', function() {
+        const [selectRandomIn1, , selectRandom] =
+            this.getBlockInput('static_select_random');
+        const selectRandomIn2 = selectRandom.getInput('INPUT2').connection;
+        const selectRandomOut = selectRandom.outputConnection;
+        const [dogOut] = this.getBlockOutput('static_dog');
+        const [identityOut, , identity] =
+            this.getBlockOutput('static_identity');
+        const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
+
+        const identities = [identityOut];
+        let currIdentityIn = identity.getInput('INPUT').connection;
+        for (let i = 0; i < 9; i++) {
+          const [identityOut, , identity] =
+              this.getBlockOutput('static_identity');
+          identities.push(identityOut);
+          currIdentityIn.connect(identityOut);
+          this.clock.tick(1);
+          currIdentityIn = identity.getInput('INPUT').connection;
+        }
+
+        selectRandomIn1.connect(identityOut);
+        this.clock.tick(1);
+        this.assertNoBinding(selectRandomIn1);
+        for (const identity of identities) {
+          this.assertNoBinding(identity);
+        }
+
+        selectRandomIn2.connect(dogOut);
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Dog');
+        for (const identity of identities) {
+          this.assertHasBinding(identity, 'Dog');
+        }
+
+        milkMammalIn.connect(selectRandomOut);
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Mammal');
+        for (const identity of identities) {
+          this.assertHasBinding(identity, 'Mammal');
+        }
+
+        /*milkMammalIn.disconnect();
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Dog');
+        for (const identity of identities) {
+          this.assertHasBinding(identity, 'Dog');
+        }
+
+        selectRandomIn2.disconnect();
+        this.clock.tick(1);
+        this.assertNoBinding(selectRandomIn1);
+        for (const identity of identities) {
+          this.assertNoBinding(identity);
+        }*/
+      });
+
+      test('Update far descendants, bound', function() {
+        const [selectRandomIn1, , selectRandom] =
+            this.getBlockInput('static_select_random');
+        const selectRandomIn2 = selectRandom.getInput('INPUT2').connection;
+        const selectRandomOut = selectRandom.outputConnection;
+        const [dogOut] = this.getBlockOutput('static_dog');
+        const [identityOut, , identity] =
+            this.getBlockOutput('static_identity');
+        const [identityIn, id] = this.getBlockInput('static_identity');
+        this.genericMap.bindType(id, 'T', 'Mammal', OUTPUT_PRIORITY);
+
+        const identities = [identityOut];
+        let currIdentityIn = identity.getInput('INPUT').connection;
+        for (let i = 0; i < 9; i++) {
+          const [identityOut, , identity] =
+              this.getBlockOutput('static_identity');
+          identities.push(identityOut);
+          currIdentityIn.connect(identityOut);
+          this.clock.tick(1);
+          currIdentityIn = identity.getInput('INPUT').connection;
+        }
+
+        selectRandomIn1.connect(identityOut);
+        this.clock.tick(1);
+        this.assertNoBinding(selectRandomIn1);
+        for (const identity of identities) {
+          this.assertNoBinding(identity);
+        }
+
+        selectRandomIn2.connect(dogOut);
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Dog');
+        for (const identity of identities) {
+          this.assertHasBinding(identity, 'Dog');
+        }
+
+        identityIn.connect(selectRandomOut);
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Mammal');
+        for (const identity of identities) {
+          this.assertHasBinding(identity, 'Mammal');
+        }
+
+        /*identityIn.disconnect();
+        this.clock.tick(1);
+        this.assertHasBinding(selectRandomIn1, 'Dog');
+        for (const identity of identities) {
+          this.assertHasBinding(identity, 'Dog');
+        }
+
+        selectRandomIn2.disconnect();
+        this.clock.tick(1);
+        this.assertNoBinding(selectRandomIn1);
+        for (const identity of identities) {
+          this.assertNoBinding(identity);
+        }*/
+      });
+    });
+
     suite('Multiple direct children', function() {
       test('Parent unbound, multiple child explicit sub same', function() {
         const [selectRandomIn1, , selectRandom] =
