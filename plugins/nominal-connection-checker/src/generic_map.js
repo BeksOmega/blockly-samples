@@ -216,22 +216,3 @@ export class GenericMap {
   }
 }
 
-/**
- * A class containing info about a depender. Used to tell the depender to stop
- * depending on the block it is depending on.
- */
-class DependerInfo {
-  /**
-   * Constructs a DependerInfo.
-   * @param {string} blockId The id of the depender block.
-   * @param {string} dependerType The type on the depender block that is
-   *     depending on a generic type on another block.
-   * @param {string} dependencyType The generic type on the other block that the
-   *     dependerType is depending on.
-   */
-  constructor(blockId, dependerType, dependencyType) {
-    this.blockId = blockId;
-    this.dependerType = dependerType;
-    this.dependencyType = dependencyType;
-  }
-}
