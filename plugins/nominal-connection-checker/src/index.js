@@ -12,6 +12,7 @@
 import * as Blockly from 'blockly/core';
 import {TypeHierarchy} from './type_hierarchy';
 import {GenericMap} from './generic_map';
+import {getType} from './utils.js';
 
 // TODO: Fix the version of Blockly being required in package.json.
 
@@ -127,18 +128,6 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   }
 
   /**
-   * Returns the type name (which could be generic) associated with the
-   * connection.
-   * @param {!Blockly.Connection} connection The connection to find the check
-   *     of.
-   * @return {string} The type name associated with the connection.
-   * @private
-   */
-  getCheck_(connection) {
-    return connection.getCheck()[0];
-  }
-
-  /**
    * Returns the explicit type of the connection. If the connection's check is
    * explicit, this just returns that. If the connection's check is generic it
    * returns the type bound to its generic check, if it exists. If it does not
@@ -150,7 +139,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    */
   getExplicitType_(connection) {
     const genericMap = this.getGenericMap();
-    return genericMap.isExplicit(connection) ? this.getCheck_(connection) :
+    return genericMap.isExplicit(connection) ? getType(connection) :
         genericMap.getExplicitTypeOfConnection(connection);
   }
 }

@@ -12,6 +12,7 @@
 import * as Blockly from 'blockly/core';
 import {PriorityQueueMap} from './priority_queue_map';
 import {DependersMap} from './dependers_map';
+import {getType, getBlockId} from './utils';
 
 /**
  * The priority for binding an explicit type to a generic type based on an input
@@ -105,10 +106,10 @@ export class GenericMap {
 
     if (this.isExplicit(parentCon)) {
       if (this.isGeneric(childCon)) {
-        explicitFn(childCon, parentCon.getCheck()[0]);
+        explicitFn(childCon, getType(parentCon));
       }
     } else if (this.isExplicit(childCon)) {
-      explicitFn(parentCon, childCon.getCheck()[0]);
+      explicitFn(parentCon, getType(childCon));
     } else {
       const parentIsBound = !!this.getExplicitTypeOfConnection(parentCon);
       const childIsBound = !!this.getExplicitTypeOfConnection(childCon);
@@ -157,8 +158,7 @@ export class GenericMap {
    *     type is not bound.
    */
   getExplicitTypeOfConnection(connection) {
-    return this.getExplicitType(
-        connection.getSourceBlock().id, connection.getCheck()[0]);
+    return this.getExplicitType(getBlockId(connection), getType(connection));
   }
 
   /**
@@ -171,8 +171,8 @@ export class GenericMap {
    * @private
    */
   isGeneric(connection) {
-    const check = connection.getCheck()[0];
-    return typeof check == 'string' && check.length == 1;
+    const type = getType(connection);
+    return typeof type == 'string' && type.length == 1;
   }
 
   /**
@@ -214,8 +214,8 @@ export class GenericMap {
    * @private
    */
   bindConnectionToGeneric_(dependentConnection, dependencyConnection) {
-    const dependencyId = dependencyConnection.getSourceBlock().id;
-    const dependencyType = dependencyConnection.getCheck()[0];
+    const dependencyId = getBlockId(dependencyConnection);
+    const dependencyType = getType(dependencyConnection);
     const explicitType = this.getExplicitType(dependencyId, dependencyType);
     this.dependersMap_.addDepender(
         dependencyId, dependencyType, dependentConnection);
@@ -233,11 +233,10 @@ export class GenericMap {
    */
   bindConnectionToExplicit_(genericConnection, explicitType) {
     this.addBinding_(
-        genericConnection.getSourceBlock().id,
-        genericConnection.getCheck()[0],
+        getBlockId(genericConnection),
+        getType(genericConnection),
         explicitType,
-        genericConnection.type == Blockly.INPUT_VALUE ?
-            INPUT_PRIORITY : OUTPUT_PRIORITY);
+        this.getPriority_(genericConnection));
     // TODO: Flow through all other connections if necessary.
     //   Make sure to update them if we get a higher priority binding.
   }
@@ -252,8 +251,8 @@ export class GenericMap {
    * @private
    */
   unbindConnectionFromGeneric_(dependentConnection, dependencyConnection) {
-    const dependencyId = dependencyConnection.getSourceBlock().id;
-    const dependencyType = dependencyConnection.getCheck()[0];
+    const dependencyId = getBlockId(dependencyConnection);
+    const dependencyType = getType(dependencyConnection);
     this.dependersMap_.removeDepender(
         dependencyId, dependencyType, dependentConnection);
     const explicitType = this.getExplicitType(dependencyId, dependencyType);
@@ -271,11 +270,10 @@ export class GenericMap {
    */
   unbindConnectionFromExplicit_(genericConnection, explicitType) {
     this.removeBinding_(
-        genericConnection.getSourceBlock().id,
-        genericConnection.getCheck()[0],
+        getBlockId(genericConnection),
+        getType(genericConnection),
         explicitType,
-        genericConnection.type == Blockly.INPUT_VALUE ?
-            INPUT_PRIORITY : OUTPUT_PRIORITY);
+        this.getPriority_(genericConnection));
     // TODO: Flow through all other connections.
   }
 
@@ -318,6 +316,19 @@ export class GenericMap {
           genericType, explicitType, priority);
     }
     return false;
+  }
+
+  /**
+   * Returns the priority of a binding for the connection based on whether it
+   * is an input or output connection.
+   * @param {!Blockly.Connection} connection The connection to get the priority
+   *     of.
+   * @return {number} The priority of a binding for the connection.
+   * @private
+   */
+  getPriority_(connection) {
+    return connection.type == Blockly.INPUT_VALUE ?
+        INPUT_PRIORITY : OUTPUT_PRIORITY;
   }
 }
 
