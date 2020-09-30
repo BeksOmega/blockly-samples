@@ -177,9 +177,12 @@ export class DependersMap {
    * @param {function(!Blockly.Connection):boolean} matcher The callback
    *      function used to test each element.
    * @param {!Object=} thisArg Value to use as `this` when executing callback.
+   * @return {!Array<!Blockly.Connection>} All the dependent connections
+   *     associated with the block id generic type pair that also pass the test
+   *     implemented by the matcher.
    */
   filter(blockId, genericType, matcher, thisArg = undefined) {
-    this.getDependents(blockId, genericType).filter(matcher, thisArg);
+    return this.getDependents(blockId, genericType).filter(matcher, thisArg);
   }
 
   /**
