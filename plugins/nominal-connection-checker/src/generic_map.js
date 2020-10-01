@@ -238,20 +238,21 @@ export class GenericMap {
    */
   bindConnectionToExplicit_(
       genericConnection, explicitType, dependencyBlock = undefined) {
+    const blockId = getBlockId(genericConnection);
+    const type = getType(genericConnection);
+
     const oldExplicit = this.getExplicitTypeOfConnection(genericConnection);
     this.addBinding_(
-        getBlockId(genericConnection),
-        getType(genericConnection),
-        explicitType,
-        this.getPriority_(genericConnection));
+        blockId, type, explicitType, this.getPriority_(genericConnection));
     const newExplicit = this.getExplicitTypeOfConnection(genericConnection);
 
-    if (oldExplicit == newExplicit) {
-      return;
-    }
+    const dependencies = this.dependenciesMap_.get(blockId)
+        .getAllBindings(type);
 
-    if (!oldExplicit) {
-      // The genericConnection just became bound, so it can now be depended on.
+    console.log(dependencies.length);
+    if (dependencies.length == 1) {
+      console.log('newly bound');
+      // The block type pair just became bound, so it can now be depended on.
       // Inform all connected blocks.
       const block = genericConnection.getSourceBlock();
       const connections = block.getChildren()
@@ -264,6 +265,57 @@ export class GenericMap {
             this.isGeneric(connection)) {
           this.bindConnectionToGeneric_(connection, genericConnection);
         }
+      }
+      return;
+    }
+
+    if (dependencies.length == 2) {
+      console.log('newly multiply bound');
+      // The block type pair just became multiply bound, so its previous
+      // dependency can now depend on it. Inform that block type pair.
+      // TODO
+    }
+
+    if (oldExplicit != newExplicit) {
+      console.log('explicit type changed');
+      // The genericConnection's explicit type has changed.
+      // Inform all dependent blocks.
+      const dependers = this.dependersMap_.getDependents(blockId, type);
+      for (const connection of dependers) {
+        this.updateDepender_(connection, oldExplicit, newExplicit);
+      }
+    }
+  }
+
+  /**
+   * Updates the dependent connection, removing the binding to the old explicit
+   * type and adding a binding to the new explicit type.
+   *
+   * If the explicit type of the block id generic type pair represented by the
+   * connection has changed all pairs that are dependent on that pair are
+   * updated recursively.
+   * @param {!Blockly.Connection} dependentConnection The connection to update.
+   * @param {string} oldExplicit The old explicit type we want to unbind.
+   * @param {string} newExplicit The new explicit type we want to bind.
+   * @private
+   */
+  updateDepender_(dependentConnection, oldExplicit, newExplicit) {
+    const blockId = getBlockId(dependentConnection);
+    const type = getType(dependentConnection);
+    const priority = this.getPriority_(dependentConnection);
+
+    const dependentOldExplicit = this.getExplicitTypeOfConnection(
+        dependentConnection);
+    this.removeBinding_(blockId, type, oldExplicit, priority);
+    this.addBinding_(blockId, type, newExplicit, priority);
+    const dependentNewExplicit = this.getExplicitTypeOfConnection(
+        dependentConnection);
+
+    if (dependentOldExplicit != dependentNewExplicit) {
+      const dependers = this.dependersMap_.getDependents(blockId, type);
+      for (const connection of dependers) {
+        this.updateDepender_(
+            connection, dependentOldExplicit, dependentNewExplicit);
       }
     }
   }
@@ -296,12 +348,47 @@ export class GenericMap {
    * @private
    */
   unbindConnectionFromExplicit_(genericConnection, explicitType) {
+    const blockId = getBlockId(genericConnection);
+    const type = getType(genericConnection);
+
+    const oldExplicit = this.getExplicitTypeOfConnection(genericConnection);
     this.removeBinding_(
-        getBlockId(genericConnection),
-        getType(genericConnection),
-        explicitType,
-        this.getPriority_(genericConnection));
-    // TODO: Flow through all other connections.
+        blockId, type, explicitType, this.getPriority_(genericConnection));
+    const newExplicit = this.getExplicitTypeOfConnection(genericConnection);
+
+    const dependencies = this.dependenciesMap_.get(blockId)
+        .getAllBindings(type);
+
+    console.log(dependencies && dependencies.length);
+    if (!dependencies) {
+      console.log('no more dependencies');
+      // The block type pair just became unbound, so it can no longer be
+      // depended on. Inform all dependers.
+      const dependers = this.dependersMap_.getDependents(blockId, type);
+      for (const connection of dependers) {
+        this.dependersMap_.removeDepender(blockId, type, connection);
+        this.unbindConnectionFromExplicit_(connection, explicitType);
+      }
+      return;
+    }
+
+    if (dependencies.length == 1) {
+      console.log('single dependency');
+      // The block type pair is now dependent on a single other pair, so that
+      // pair should not be allowed to be dependent on this pair. Remove it
+      // as a depender (if it is one).
+    }
+
+    if (oldExplicit != newExplicit) {
+      console.log('type changed');
+      // The genericConnection's explicit type has changed.
+      // Inform all dependent blocks.
+      const dependers = this.dependersMap_.getDependents(blockId, type);
+      console.log(dependers);
+      for (const connection of dependers) {
+        this.updateDepender_(connection, oldExplicit, newExplicit);
+      }
+    }
   }
 
   /**
