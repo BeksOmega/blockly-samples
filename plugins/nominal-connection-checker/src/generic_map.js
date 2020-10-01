@@ -219,7 +219,10 @@ export class GenericMap {
     const explicitType = this.getExplicitType(dependencyId, dependencyType);
     this.dependersMap_.addDepender(
         dependencyId, dependencyType, dependentConnection);
-    this.bindConnectionToExplicit_(dependentConnection, explicitType);
+    this.bindConnectionToExplicit_(
+        dependentConnection,
+        explicitType,
+        dependencyConnection.getSourceBlock());
   }
 
   /**
@@ -229,16 +232,40 @@ export class GenericMap {
    *     bind the type of.
    * @param {string} explicitType The name of the explicit type we want to bind
    *     the generic type to.
+   * @param {!Blockly.Block=} dependencyBlock The generic block that the
+   *     explicit binding is coming from (if any).
    * @private
    */
-  bindConnectionToExplicit_(genericConnection, explicitType) {
+  bindConnectionToExplicit_(
+      genericConnection, explicitType, dependencyBlock = undefined) {
+    const oldExplicit = this.getExplicitTypeOfConnection(genericConnection);
     this.addBinding_(
         getBlockId(genericConnection),
         getType(genericConnection),
         explicitType,
         this.getPriority_(genericConnection));
-    // TODO: Flow through all other connections if necessary.
-    //   Make sure to update them if we get a higher priority binding.
+    const newExplicit = this.getExplicitTypeOfConnection(genericConnection);
+
+    if (oldExplicit == newExplicit) {
+      return;
+    }
+
+    if (!oldExplicit) {
+      // The genericConnection just became bound, so it can now be depended on.
+      // Inform all connected blocks.
+      const block = genericConnection.getSourceBlock();
+      const connections = block.getChildren()
+          .map((block) => block.outputConnection);
+      connections.push(
+          block.outputConnection && block.outputConnection.targetConnection);
+      for (const connection of connections) {
+        if (connection &&
+            connection.getSourceBlock() != dependencyBlock &&
+            this.isGeneric(connection)) {
+          this.bindConnectionToGeneric_(connection, genericConnection);
+        }
+      }
+    }
   }
 
   /**
