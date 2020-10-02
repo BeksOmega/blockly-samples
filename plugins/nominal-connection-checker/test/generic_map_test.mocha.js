@@ -179,7 +179,7 @@ suite('GenericMap', function() {
     delete Blockly.Blocks['static_select_random'];
   });
 
-  suite('isGeneric_', function() {
+  suite('isGeneric', function() {
     setup(function() {
       this.assertGeneric = function(check, boolVal) {
         const mockConn = {
@@ -465,12 +465,16 @@ suite('GenericMap', function() {
 
       identityIn.connect(identityOut);
       this.clock.tick(1);
+      console.log('1');
       this.assertHasBinding(identityIn, 'Mammal');
+      console.log('2');
       this.assertHasBinding(identityOut, 'Mammal');
 
       identityIn.disconnect();
       this.clock.tick(1);
+      console.log('3');
       this.assertHasBinding(identityIn, 'Mammal');
+      console.log('4');
       this.assertHasBinding(identityOut, 'Dog');
     });
 

@@ -49,7 +49,7 @@ export class GenericMap {
     /**
      * Map of block ids to PriorityQueMaps that define what the generic types
      * of the block are bound to.
-     * @type {!Map<string, !PriorityQueueMap>}
+     * @type {!Map<string, !PriorityQueueMap<string, ExplicitBinding>>}
      * @private
      */
     this.dependenciesMap_ = new Map();
@@ -113,11 +113,14 @@ export class GenericMap {
     } else {
       const parentIsBound = !!this.getExplicitTypeOfConnection(parentCon);
       const childIsBound = !!this.getExplicitTypeOfConnection(childCon);
-      if (parentIsBound) {
-        genericFn(childCon, parentCon);
-      }
+      // Binding the child to the parent may change the explicit type of the
+      // child to match the parent, and then the parent will get bound to its
+      // own type. If we bind the child to the parent first, we avoid this.
       if (childIsBound) {
         genericFn(parentCon, childCon);
+      }
+      if (parentIsBound) {
+        genericFn(childCon, parentCon);
       }
     }
   }
@@ -138,13 +141,13 @@ export class GenericMap {
     if (!priorityMap) {
       return undefined;
     }
-    const types = priorityMap.getValues(genericType);
-    if (!types) {
+    const bindings = priorityMap.getValues(genericType);
+    if (!bindings) {
       return undefined;
     }
     // In the future we might add logic to figure out what the super type of all
     // of the types is. But for now there should only be one type bound anyway.
-    return types[0];
+    return bindings[0].type;
   }
 
   /**
@@ -220,9 +223,7 @@ export class GenericMap {
     this.dependersMap_.addDepender(
         dependencyId, dependencyType, dependentConnection);
     this.bindConnectionToExplicit_(
-        dependentConnection,
-        explicitType,
-        dependencyConnection.getSourceBlock());
+        dependentConnection, explicitType, dependencyConnection);
   }
 
   /**
@@ -232,22 +233,21 @@ export class GenericMap {
    *     bind the type of.
    * @param {string} explicitType The name of the explicit type we want to bind
    *     the generic type to.
-   * @param {!Blockly.Block=} dependencyBlock The generic block that the
-   *     explicit binding is coming from (if any).
+   * @param {!Blockly.Connection=} sourceConnection The generic connection that
+   *     the explicit binding is coming from (if any).
    * @private
    */
   bindConnectionToExplicit_(
-      genericConnection, explicitType, dependencyBlock = undefined) {
+      genericConnection, explicitType, sourceConnection = undefined) {
     const blockId = getBlockId(genericConnection);
     const type = getType(genericConnection);
+    const priority = this.getPriority_(genericConnection);
 
     const oldExplicit = this.getExplicitTypeOfConnection(genericConnection);
-    this.addBinding_(
-        blockId, type, explicitType, this.getPriority_(genericConnection));
+    this.addBinding_(blockId, type, explicitType, priority, sourceConnection);
     const newExplicit = this.getExplicitTypeOfConnection(genericConnection);
 
-    const dependencies = this.dependenciesMap_.get(blockId)
-        .getAllBindings(type);
+    const dependencies = this.dependenciesMap_.get(blockId).getAllValues(type);
 
     console.log(dependencies.length);
     if (dependencies.length == 1) {
@@ -261,28 +261,53 @@ export class GenericMap {
           block.outputConnection && block.outputConnection.targetConnection);
       for (const connection of connections) {
         if (connection &&
-            connection.getSourceBlock() != dependencyBlock &&
+            connection != sourceConnection &&
             this.isGeneric(connection)) {
+          console.log('adding depender');
           this.bindConnectionToGeneric_(connection, genericConnection);
         }
       }
       return;
     }
 
-    if (dependencies.length == 2) {
-      console.log('newly multiply bound');
-      // The block type pair just became multiply bound, so its previous
-      // dependency can now depend on it. Inform that block type pair.
-      // TODO
-    }
-
     if (oldExplicit != newExplicit) {
-      console.log('explicit type changed');
+      console.log(
+          'explicit type changed. old: ', oldExplicit, ', new: ', newExplicit);
       // The genericConnection's explicit type has changed.
       // Inform all dependent blocks.
       const dependers = this.dependersMap_.getDependents(blockId, type);
       for (const connection of dependers) {
-        this.updateDepender_(connection, oldExplicit, newExplicit);
+        console.log('updating depender w/ type', newExplicit);
+        this.updateDepender_(
+            connection, oldExplicit, newExplicit, genericConnection);
+      }
+    }
+
+    if (dependencies.length == 2) {
+      console.log('newly multiply bound');
+      // The block type pair just became multiply bound, so its previous
+      // dependency can now depend on it. Inform that block type pair.
+      const dependency = dependencies.find((explicitBinding) => {
+        return explicitBinding.sourceConnection &&
+            explicitBinding.sourceConnection != sourceConnection;
+      });
+      if (dependency) {
+        const connection = dependency.sourceConnection;
+        this.dependersMap_.addDepender(blockId, type, connection);
+        // We must pass the newly bound explicit type, which is not necessarily
+        // the "display" explicit type of the 'genericConnection'. If the
+        // 'connection' is the superior, and has a more general type than the
+        // newly bound explicit type, that would be the "display" explicit type
+        // of the 'genericConnection'. But we want to bind the 'connection' to
+        // the type the 'genericConnection' would have if it were not bound to
+        // the type of the 'connection', which is the explicitType that was just
+        // passed.
+        this.addBinding_(
+            getBlockId(connection),
+            getType(connection),
+            explicitType,
+            this.getPriority_(connection),
+            genericConnection);
       }
     }
   }
@@ -299,15 +324,16 @@ export class GenericMap {
    * @param {string} newExplicit The new explicit type we want to bind.
    * @private
    */
-  updateDepender_(dependentConnection, oldExplicit, newExplicit) {
+  updateDepender_(
+      dependentConnection, oldExplicit, newExplicit, sourceConnection) {
     const blockId = getBlockId(dependentConnection);
     const type = getType(dependentConnection);
     const priority = this.getPriority_(dependentConnection);
 
     const dependentOldExplicit = this.getExplicitTypeOfConnection(
         dependentConnection);
-    this.removeBinding_(blockId, type, oldExplicit, priority);
-    this.addBinding_(blockId, type, newExplicit, priority);
+    this.removeBinding_(blockId, type, oldExplicit, priority, sourceConnection);
+    this.addBinding_(blockId, type, newExplicit, priority, sourceConnection);
     const dependentNewExplicit = this.getExplicitTypeOfConnection(
         dependentConnection);
 
@@ -335,7 +361,8 @@ export class GenericMap {
     this.dependersMap_.removeDepender(
         dependencyId, dependencyType, dependentConnection);
     const explicitType = this.getExplicitType(dependencyId, dependencyType);
-    this.unbindConnectionFromExplicit_(dependentConnection, explicitType);
+    this.unbindConnectionFromExplicit_(
+        dependentConnection, explicitType, dependencyConnection);
   }
 
   /**
@@ -347,13 +374,16 @@ export class GenericMap {
    *     unbind the generic type from.
    * @private
    */
-  unbindConnectionFromExplicit_(genericConnection, explicitType) {
+  unbindConnectionFromExplicit_(
+      genericConnection, explicitType, sourceConnection) {
     const blockId = getBlockId(genericConnection);
     const type = getType(genericConnection);
+    const priority = this.getPriority_(genericConnection);
 
     const oldExplicit = this.getExplicitTypeOfConnection(genericConnection);
+    console.log('removing', explicitType);
     this.removeBinding_(
-        blockId, type, explicitType, this.getPriority_(genericConnection));
+        blockId, type, explicitType, priority, sourceConnection);
     const newExplicit = this.getExplicitTypeOfConnection(genericConnection);
 
     const dependencies = this.dependenciesMap_.get(blockId)
@@ -380,7 +410,7 @@ export class GenericMap {
     }
 
     if (oldExplicit != newExplicit) {
-      console.log('type changed');
+      console.log('type changed. old: ', oldExplicit, ', new: ', newExplicit);
       // The genericConnection's explicit type has changed.
       // Inform all dependent blocks.
       const dependers = this.dependersMap_.getDependents(blockId, type);
@@ -401,15 +431,25 @@ export class GenericMap {
    *     the generic type to.
    * @param {number} priority The priority of the binding. Higher priority
    *     bindings override lower priority bindings.
+   * @param {!Blockly.Connection=} sourceConnection The generic connection that
+   *     is the source of this binding, if any.
    * @private
    */
-  addBinding_(blockId, genericType, explicitType, priority) {
+  addBinding_(
+      blockId,
+      genericType,
+      explicitType,
+      priority,
+      sourceConnection = undefined
+  ) {
     let queueMap = this.dependenciesMap_.get(blockId);
     if (!queueMap) {
       queueMap = new PriorityQueueMap();
       this.dependenciesMap_.set(blockId, queueMap);
     }
-    queueMap.bind(genericType, explicitType, priority);
+    const binding = new ExplicitBinding(explicitType, sourceConnection);
+    console.log('adding binding', binding);
+    queueMap.bind(genericType, binding, priority);
   }
 
   /**
@@ -421,15 +461,37 @@ export class GenericMap {
    * @param {string} explicitType The name of the explicit type to unbind from
    *     the generic type.
    * @param {number} priority The priority of the binding to remove.
+   * @param {!Blockly.Connection=} sourceConnection The generic connection that
+   *     is the source of this binding, if any.
    * @return {boolean} True if the binding existed, false if it did not.
    * @private
    */
-  removeBinding_(blockId, genericType, explicitType, priority) {
-    if (this.dependenciesMap_.has(blockId)) {
-      return this.dependenciesMap_.get(blockId).unbind(
-          genericType, explicitType, priority);
+  removeBinding_(
+      blockId,
+      genericType,
+      explicitType,
+      priority,
+      sourceConnection = undefined
+  ) {
+    const priorityMap = this.dependenciesMap_.get(blockId);
+    if (!priorityMap) {
+      return false;
     }
-    return false;
+    if (sourceConnection) {
+      console.log('got source connection');
+      return priorityMap.unbindMatching(genericType, (explicitBinding) => {
+        if (explicitBinding.sourceConnection == sourceConnection) {
+          console.log(explicitBinding);
+        }
+        return explicitBinding.sourceConnection == sourceConnection;
+      });
+    }
+    return priorityMap.unbindMatching(genericType,
+        (explicitBinding, priority) => {
+          return explicitBinding.type == explicitType &&
+              !explicitBinding.sourceConnection &&
+              priority == priority;
+        });
   }
 
   /**
@@ -443,6 +505,23 @@ export class GenericMap {
   getPriority_(connection) {
     return connection.type == Blockly.INPUT_VALUE ?
         INPUT_PRIORITY : OUTPUT_PRIORITY;
+  }
+}
+
+/**
+ * Class representing an explicit type binding.
+ */
+class ExplicitBinding {
+  /**
+   * Constructs the ExplicitBinding.
+   * @param {string} explicitType The explicit type that the thing is being
+   *     bound to.
+   * @param {!Blockly.Connection=} sourceConnection The generic connection that
+   *     is the source of this binding, if any.
+   */
+  constructor(explicitType, sourceConnection = undefined) {
+    this.type = explicitType;
+    this.sourceConnection = sourceConnection;
   }
 }
 
