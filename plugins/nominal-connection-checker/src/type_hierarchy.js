@@ -214,17 +214,6 @@ export class TypeHierarchy {
   typeFulfillsType(subName, superName) {
     return this.types_.get(subName.toLowerCase())
         .hasAncestor(superName.toLowerCase());
-    /*const caselessSub = subName.toLowerCase();
-    const caselessSup = superName.toLowerCase();
-    if (this.typeIsExactlyType(caselessSub, caselessSup)) {
-      return true;
-    }
-    const subType = this.types_.get(caselessSub);
-    if (subType.hasDirectSuper(caselessSup)) {
-      return true;
-    }
-    return subType.supers().some(
-        (name) => this.typeFulfillsType(name, caselessSup), this);*/
   }
 
   /**
