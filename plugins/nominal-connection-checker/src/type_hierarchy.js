@@ -212,7 +212,9 @@ export class TypeHierarchy {
    *     in the type hierarchy definition. False otherwise.
    */
   typeFulfillsType(subName, superName) {
-    const caselessSub = subName.toLowerCase();
+    return this.types_.get(subName.toLowerCase())
+        .hasAncestor(superName.toLowerCase());
+    /*const caselessSub = subName.toLowerCase();
     const caselessSup = superName.toLowerCase();
     if (this.typeIsExactlyType(caselessSub, caselessSup)) {
       return true;
@@ -222,7 +224,7 @@ export class TypeHierarchy {
       return true;
     }
     return subType.supers().some(
-        (name) => this.typeFulfillsType(name, caselessSup), this);
+        (name) => this.typeFulfillsType(name, caselessSup), this);*/
   }
 
   /**
@@ -289,7 +291,8 @@ class TypeDef {
      * @type {!Set<string>}
      * @private
      */
-    this.ancestors_ = new Set(this.name);
+    this.ancestors_ = new Set();
+    this.ancestors_.add(this.name);
 
     /**
      * The caseless names of the descendants of this type.
@@ -297,6 +300,7 @@ class TypeDef {
      * @private
      */
     this.descendants_ = new Set(this.name);
+    this.descendants_.add(this.name);
   }
 
   /**
