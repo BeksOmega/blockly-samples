@@ -42,7 +42,6 @@ export class TypeHierarchy {
 
     this.initTypes_(hierarchyDef);
     this.initNearestCommonParents_();
-    console.log(this.nearestCommonParents_);
   }
 
   /**
@@ -222,12 +221,13 @@ export class TypeHierarchy {
    *     given types.
    */
   getNearestCommonParents(...types) {
-    types = types.map((type) => type.toLowerCase());
-    if (types.length < 2) {
-      return types;
+    if (!types.length) {
+      return [];
     }
+    types = types.map((type) => type.toLowerCase());
     return types.reduce((accumulator, currType) => {
-      const nearestCommonParentsMap = this.nearestCommonParents_.get(currType);
+      const nearestCommonParentsMap =
+          this.nearestCommonParents_.get(currType);
       return accumulator
           .flatMap((type) => {
             return nearestCommonParentsMap.get(type);
