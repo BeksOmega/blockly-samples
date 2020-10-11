@@ -42,6 +42,7 @@ export class TypeHierarchy {
 
     this.initTypes_(hierarchyDef);
     this.initNearestCommonParents_();
+    console.log(this.nearestCommonParents_);
   }
 
   /**
@@ -81,10 +82,8 @@ export class TypeHierarchy {
     // Init ancestors.
     let unvisitedTypes = new Set(this.types_.keys());
     while (unvisitedTypes.size) {
-      for (const [typeName, type] of this.types_) {
-        if (!unvisitedTypes.has(typeName)) {
-          continue;
-        }
+      for (const typeName of unvisitedTypes) {
+        const type = this.types_.get(typeName);
         const unvisitedSupers = type.supers().filter(
             unvisitedTypes.has, unvisitedTypes);
         if (!unvisitedSupers.length) {
@@ -100,10 +99,8 @@ export class TypeHierarchy {
     // Init descendants.
     unvisitedTypes = new Set(this.types_.keys());
     while (unvisitedTypes.size) {
-      for (const [typeName, type] of this.types_) {
-        if (!unvisitedTypes.has(typeName)) {
-          continue;
-        }
+      for (const typeName of unvisitedTypes) {
+        const type = this.types_.get(typeName);
         const unvisitedSubs = type.subs().filter(
             unvisitedTypes.has, unvisitedTypes);
         if (!unvisitedSubs.length) {
@@ -134,10 +131,8 @@ export class TypeHierarchy {
   initNearestCommonParents_() {
     const unvisitedTypes = new Set(this.types_.keys());
     while (unvisitedTypes.size) {
-      for (const [typeName, type] of this.types_) {
-        if (!unvisitedTypes.has(typeName)) {
-          continue;
-        }
+      for (const typeName of unvisitedTypes) {
+        const type = this.types_.get(typeName);
         const unvisitedSupers = type.supers().filter(
             unvisitedTypes.has, unvisitedTypes);
         if (unvisitedSupers.length) {
