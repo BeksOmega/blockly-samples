@@ -386,8 +386,6 @@ suite('NominalConnectionChecker', function() {
       selectRandomIn2.connect(identity2Out);
       this.checker.unbindType(selectRandom, 'T');
 
-      console.log(this.checker.getExplicitTypes(selectRandom, 'T'));
-      console.log(this.checker.getExplicitTypes(identity3, 'T'));
       this.assertCanConnect(selectRandomIn3, identity3Out);
     });
 

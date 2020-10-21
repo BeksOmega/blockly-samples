@@ -160,7 +160,10 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
       }
     }
 
-    block.bumpNeighbours();
+    // Note: Using .rendered may cause issues. See blockly/#1676.
+    if (block.rendered) {
+      block.bumpNeighbours();
+    }
   }
 
   /**
