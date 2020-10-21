@@ -115,7 +115,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    */
   getExplicitTypesOfConnection(connection) {
     const check = getCheck(connection);
-    return isExplicitConnection(connection) ? check:
+    return isExplicitConnection(connection) ? [check]:
         this.getExplicitTypes(connection.getSourceBlock(), check);
   }
 
@@ -294,7 +294,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     const target = connection.targetConnection;
     const check = getCheck(target);
     if (isExplicitConnection(target)) {
-      return check;
+      return [check];
     }
     return this.getBoundTypes_(
         target.getSourceBlock(), check, target);
