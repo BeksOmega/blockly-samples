@@ -11,8 +11,9 @@
 const chai = require('chai');
 const Blockly = require('blockly/node');
 
-const {pluginInfo} =
-    require('../src/index.js');
+const {pluginInfo} = require('../src/index.js');
+const {twoBlockTest, runTwoBlockTests} =
+    require('./connection_checker_test_helper.mocha');
 
 suite('NominalConnectionChecker', function() {
   setup(function() {
@@ -163,6 +164,154 @@ suite('NominalConnectionChecker', function() {
       },
     };
 
+    const types = Object.keys(hierarchyDef);
+    types.push('T');
+    this.blocks = [];
+    for (let type of types) {
+      type = type.toLowerCase();
+      this.blocks.push({
+        'type': 'static_' + type + '_outer_value',
+        'message0': '%1',
+        'args0': [
+          {
+            'type': 'input_value',
+            'name': 'INPUT1',
+            'check': [type],
+          },
+        ],
+      });
+      this.blocks.push({
+        'type': 'static_' + type + '_outer_statement',
+        'message0': '%1',
+        'args0': [
+          {
+            'type': 'input_statement',
+            'name': 'INPUT1',
+            'check': [type],
+          },
+        ],
+      });
+      this.blocks.push({
+        'type': 'static_' + type + '_outer_next',
+        'message0': '',
+        'nextStatement': [type],
+      });
+
+      this.blocks.push({
+        'type': 'static_' + type + '_inner_out',
+        'message0': '',
+        'output': [type],
+      });
+      this.blocks.push({
+        'type': 'static_' + type + '_inner_prev',
+        'message0': '',
+        'previousStatement': [type],
+      });
+
+      this.blocks.push({
+        'type': 'static_' + type + '_main_out_value',
+        'message0': '%1 %2 %3',
+        'args0': [
+          {
+            'type': 'input_value',
+            'name': 'INPUT1',
+            'check': [type],
+          },
+          {
+            'type': 'input_value',
+            'name': 'INPUT2',
+            'check': [type],
+          },
+          {
+            'type': 'input_value',
+            'name': 'INPUT3',
+            'check': [type],
+          },
+        ],
+        'output': [type],
+      });
+      this.blocks.push({
+        'type': 'static_' + type + '_main_out_statement',
+        'message0': '%1',
+        'args0': [
+          {
+            'type': 'input_statement',
+            'name': 'INPUT1',
+            'check': [type],
+          },
+          {
+            'type': 'input_statement',
+            'name': 'INPUT2',
+            'check': [type],
+          },
+          {
+            'type': 'input_statement',
+            'name': 'INPUT3',
+            'check': [type],
+          },
+        ],
+        'output': [type],
+      });
+      this.blocks.push({
+        'type': 'static_' + type + '_main_out_next',
+        'message0': '',
+        'output': [type],
+        'nextStatement': [type],
+      });
+      this.blocks.push({
+        'type': 'static_' + type + '_main_prev_value',
+        'message0': '%1 %2 %3',
+        'args0': [
+          {
+            'type': 'input_value',
+            'name': 'INPUT1',
+            'check': [type],
+          },
+          {
+            'type': 'input_value',
+            'name': 'INPUT2',
+            'check': [type],
+          },
+          {
+            'type': 'input_value',
+            'name': 'INPUT3',
+            'check': [type],
+          },
+        ],
+        'previousStatement': [type],
+      });
+      this.blocks.push({
+        'type': 'static_' + type + '_main_prev_statement',
+        'message0': '%1',
+        'args0': [
+          {
+            'type': 'input_statement',
+            'name': 'INPUT1',
+            'check': [type],
+          },
+          {
+            'type': 'input_statement',
+            'name': 'INPUT2',
+            'check': [type],
+          },
+          {
+            'type': 'input_statement',
+            'name': 'INPUT3',
+            'check': [type],
+          },
+        ],
+        'previousStatement': [type],
+      });
+      this.blocks.push({
+        'type': 'static_' + type + '_main_prev_next',
+        'message0': '',
+        'previousStatement': [type],
+        'nextStatement': [type],
+      });
+    }
+
+    Blockly.defineBlocksWithJsonArray(this.blocks);
+
     const options = {
       plugins: {
         ...pluginInfo,
@@ -209,6 +358,10 @@ suite('NominalConnectionChecker', function() {
     delete Blockly.Blocks['static_launch_flying'];
     delete Blockly.Blocks['static_identity'];
     delete Blockly.Blocks['static_select_random'];
+
+    for (const block of this.blocks) {
+      delete Blockly.Blocks[block.type];
+    }
   });
 
   suite('Simple subtyping', function() {
@@ -572,7 +725,7 @@ suite('NominalConnectionChecker', function() {
       chai.assert.isTrue(milkMammalIn.isConnected());
     });
 
-    test('Prev parent valid', function () {
+    test('Prev parent valid', function() {
 
     });
 
@@ -661,52 +814,55 @@ suite('NominalConnectionChecker', function() {
             conn.getSourceBlock(), 'T');
         chai.assert.include(explicitTypes, binding);
       };
+      this.bindConnection = function(conn, binding) {
+        this.checker.bindType(conn.getSourceBlock(), 'T', binding);
+      };
     });
 
     suite('Simple, Two blocks', function() {
-      test('Output parent explicit, value child explicit', function() {
-        const [trainDogIn] = this.getBlockInput('static_train_dog');
-        const [dogOut] = this.getBlockOutput('static_dog');
+      twoBlockTest('Parent explicit, child explicit', function() {
+        const dogIn = this.getOuterInput('dog');
+        const dogOut = this.getInnerOutput('dog');
 
-        trainDogIn.connect(dogOut);
-        this.assertNoType(trainDogIn);
+        dogIn.connect(dogOut);
+        this.assertNoType(dogIn);
         this.assertNoType(dogOut);
 
-        trainDogIn.disconnect();
-        this.assertNoType(trainDogIn);
+        dogIn.disconnect();
+        this.assertNoType(dogIn);
         this.assertNoType(dogOut);
       });
 
-      test('Parent explicit, child unbound', function() {
-        const [trainDogIn] = this.getBlockInput('static_train_dog');
-        const [identityOut] = this.getBlockOutput('static_identity');
+      twoBlockTest('Parent explicit, child unbound', function() {
+        const dogIn = this.getOuterInput('dog');
+        const identityOut = this.getInnerOutput('t');
 
-        trainDogIn.connect(identityOut);
-        this.assertNoType(trainDogIn);
+        dogIn.connect(identityOut);
+        this.assertNoType(dogIn);
         this.assertHasType(identityOut, 'dog');
 
-        trainDogIn.disconnect();
-        this.assertNoType(trainDogIn);
+        dogIn.disconnect();
+        this.assertNoType(dogIn);
         this.assertNoType(identityOut);
       });
 
-      test('Parent explicit, child bound', function() {
-        const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
-        const [identityOut, block] = this.getBlockOutput('static_identity');
-        this.checker.bindType(block, 'T', 'dog');
+      twoBlockTest('Parent explicit, child bound', function() {
+        const mammalIn = this.getOuterInput('mammal');
+        const identityOut = this.getInnerOutput('t');
+        this.bindConnection(identityOut, 'dog');
 
-        milkMammalIn.connect(identityOut);
-        this.assertNoType(milkMammalIn);
+        mammalIn.connect(identityOut);
+        this.assertNoType(mammalIn);
         this.assertHasType(identityOut, 'mammal');
 
-        milkMammalIn.disconnect();
-        this.assertNoType(milkMammalIn);
+        mammalIn.disconnect();
+        this.assertNoType(mammalIn);
         this.assertHasType(identityOut, 'dog');
       });
 
-      test('Parent unbound, child explicit', function() {
-        const [identityIn] = this.getBlockInput('static_identity');
-        const [dogOut] = this.getBlockOutput('static_dog');
+      twoBlockTest('Parent unbound, child explicit', function() {
+        const identityIn = this.getOuterInput('t');
+        const dogOut = this.getInnerOutput('dog');
 
         identityIn.connect(dogOut);
         this.assertHasType(identityIn, 'dog');
@@ -717,9 +873,9 @@ suite('NominalConnectionChecker', function() {
         this.assertNoType(dogOut);
       });
 
-      test('Parent unbound, child unbound', function() {
-        const [identityIn] = this.getBlockInput('static_identity');
-        const [identityOut] = this.getBlockOutput('static_identity');
+      twoBlockTest('Parent unbound, child unbound', function() {
+        const identityIn = this.getOuterInput('t');
+        const identityOut = this.getInnerOutput('t');
 
         identityIn.connect(identityOut);
         this.assertNoType(identityIn);
@@ -730,10 +886,10 @@ suite('NominalConnectionChecker', function() {
         this.assertNoType(identityOut);
       });
 
-      test('Parent unbound, child bound', function() {
-        const [identityIn] = this.getBlockInput('static_identity');
-        const [identityOut, block] = this.getBlockOutput('static_identity');
-        this.checker.bindType(block, 'T', 'dog');
+      twoBlockTest('Parent unbound, child bound', function() {
+        const identityIn = this.getOuterInput('t');
+        const identityOut = this.getInnerOutput('t');
+        this.bindConnection(identityOut, 'dog');
 
         identityIn.connect(identityOut);
         this.assertHasType(identityIn, 'dog');
@@ -744,10 +900,10 @@ suite('NominalConnectionChecker', function() {
         this.assertHasType(identityOut, 'dog');
       });
 
-      test('Parent bound, child explicit', function() {
-        const [identityIn, block] = this.getBlockInput('static_identity');
-        const [dogOut] = this.getBlockOutput('static_dog');
-        this.checker.bindType(block, 'T', 'mammal');
+      twoBlockTest('Parent bound, child explicit', function() {
+        const identityIn = this.getOuterInput('t');
+        const dogOut = this.getInnerOutput('dog');
+        this.bindConnection(identityIn, 'mammal');
 
         identityIn.connect(dogOut);
         this.assertHasType(identityIn, 'mammal');
@@ -758,10 +914,10 @@ suite('NominalConnectionChecker', function() {
         this.assertNoType(dogOut);
       });
 
-      test('Parent bound, child unbound', function() {
-        const [identityIn, block] = this.getBlockInput('static_identity');
-        const [identityOut] = this.getBlockOutput('static_identity');
-        this.checker.bindType(block, 'T', 'dog');
+      twoBlockTest('Parent bound, child unbound', function() {
+        const identityIn = this.getOuterInput('t');
+        const identityOut = this.getInnerOutput('t');
+        this.bindConnection(identityIn, 'dog');
 
         identityIn.connect(identityOut);
         this.assertHasType(identityIn, 'dog');
@@ -772,11 +928,11 @@ suite('NominalConnectionChecker', function() {
         this.assertNoType(identityOut);
       });
 
-      test('Parent bound, child bound', function() {
-        const [identityIn, inBlock] = this.getBlockInput('static_identity');
-        const [identityOut, outBlock] = this.getBlockOutput('static_identity');
-        this.checker.bindType(inBlock, 'T', 'mammal');
-        this.checker.bindType(outBlock, 'T', 'dog');
+      twoBlockTest('Parent bound, child bound', function() {
+        const identityIn = this.getOuterInput('t');
+        const identityOut = this.getInnerOutput('t');
+        this.bindConnection(identityIn, 'mammal');
+        this.bindConnection(identityOut, 'dog');
 
         identityIn.connect(identityOut);
         this.assertHasType(identityIn, 'mammal');
@@ -787,7 +943,9 @@ suite('NominalConnectionChecker', function() {
         this.assertHasType(identityOut, 'dog');
       });
 
-      test('Parent explicit, child bound -> disconnect child\'s child',
+      runTwoBlockTests();
+
+      /*test('Parent explicit, child bound -> disconnect child\'s child',
           function() {
             const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
             const [identityOut, identity] =
@@ -832,11 +990,10 @@ suite('NominalConnectionChecker', function() {
             this.assertNoType(milkMammalIn);
             this.assertHasType(identityIn, 'dog');
             this.assertNoType(dogOut);
-          });
+          });*/
     });
 
     suite('Flow through connections', function() {
-      console.log(this);
       test('A unbound, B unbound, C explicit', function() {
         const [aIn] = this.getBlockInput('static_identity');
         const [bIn, b] = this.getBlockInput('static_identity');
