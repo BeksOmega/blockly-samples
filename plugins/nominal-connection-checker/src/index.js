@@ -251,11 +251,14 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
 
     types.push(...this.getConnectionTypes_(
         block.outputConnection, genericType, connectionToSkip));
-
+    types.push(...this.getConnectionTypes_(
+        block.previousConnection, genericType, connectionToSkip));
     for (const input of block.inputList) {
       types.push(...this.getConnectionTypes_(
           input.connection, genericType, connectionToSkip));
     }
+    types.push(...this.getConnectionTypes_(
+        block.nextConnection, genericType, connectionToSkip));
 
     if (types.length) {
       return this.getTypeHierarchy_().getNearestCommonParents(...types);
