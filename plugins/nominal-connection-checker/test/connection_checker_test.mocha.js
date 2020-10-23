@@ -12,7 +12,7 @@ const chai = require('chai');
 const Blockly = require('blockly/node');
 
 const {pluginInfo} = require('../src/index.js');
-const {twoBlockTest, runTwoBlockTests} =
+const {twoBlockTest, runTwoBlockTests, threeBlockTest, runThreeBlockTests} =
     require('./connection_checker_test_helper.mocha');
 
 suite('NominalConnectionChecker', function() {
@@ -945,7 +945,7 @@ suite('NominalConnectionChecker', function() {
 
       runTwoBlockTests();
 
-      /*test('Parent explicit, child bound -> disconnect child\'s child',
+      /* test('Parent explicit, child bound -> disconnect child\'s child',
           function() {
             const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
             const [identityOut, identity] =
@@ -990,76 +990,75 @@ suite('NominalConnectionChecker', function() {
             this.assertNoType(milkMammalIn);
             this.assertHasType(identityIn, 'dog');
             this.assertNoType(dogOut);
-          });*/
+          }); */
     });
 
     suite('Flow through connections', function() {
-      test('A unbound, B unbound, C explicit', function() {
-        const [aIn] = this.getBlockInput('static_identity');
-        const [bIn, b] = this.getBlockInput('static_identity');
-        const bOut = b.outputConnection;
-        const [cOut] = this.getBlockOutput('static_dog');
+      threeBlockTest('A unbound, B unbound, C explicit', function() {
+        const aIn = this.getOuterInput('t');
+        const b = this.getMain('t');
+        const cOut = this.getInnerOutput('dog');
 
-        aIn.connect(bOut);
+        aIn.connect(b.out);
         this.assertNoType(aIn);
-        this.assertNoType(bOut);
+        this.assertNoType(b.out);
 
-        bIn.connect(cOut);
+        b.in.connect(cOut);
         this.assertNoType(cOut);
-        this.assertHasType(bIn, 'dog');
+        this.assertHasType(b.in, 'dog');
         this.assertHasType(aIn, 'dog');
 
-        bIn.disconnect(cOut);
+        b.in.disconnect(cOut);
         this.assertNoType(aIn);
-        this.assertNoType(bIn);
+        this.assertNoType(b.in);
         this.assertNoType(cOut);
       });
 
-      test('A unbound, B unbound, C bound', function() {
-        const [aIn] = this.getBlockInput('static_identity');
-        const [bIn, b] = this.getBlockInput('static_identity');
-        const bOut = b.outputConnection;
-        const [cOut, block] = this.getBlockOutput('static_identity');
-        this.checker.bindType(block, 'T', 'dog', 201);
+      threeBlockTest('A unbound, B unbound, C bound', function() {
+        const aIn = this.getOuterInput('t');
+        const b = this.getMain('t');
+        const cOut = this.getInnerOutput('t');
+        this.bindConnection(cOut, 'dog');
 
-        aIn.connect(bOut);
+        aIn.connect(b.out);
         this.assertNoType(aIn);
-        this.assertNoType(bIn);
+        this.assertNoType(b.in);
 
-        bIn.connect(cOut);
-        this.assertHasType(bIn, 'dog');
+        b.in.connect(cOut);
+        this.assertHasType(b.in, 'dog');
         this.assertHasType(aIn, 'dog');
 
-        bIn.disconnect();
+        b.in.disconnect();
         this.assertNoType(aIn);
-        this.assertNoType(bIn);
+        this.assertNoType(b.in);
       });
 
-      test('A explicit, B unbound, C unbound', function() {
-        const [aIn] = this.getBlockInput('static_train_dog');
-        const [bIn, b] = this.getBlockInput('static_identity');
-        const bOut = b.outputConnection;
-        const [cOut] = this.getBlockOutput('static_identity');
+      threeBlockTest('A explicit, B unbound, C unbound', function() {
+        const aIn = this.getOuterInput('dog');
+        const b = this.getMain('t');
+        const cOut = this.getInnerOutput('t');
 
-        aIn.connect(bOut);
+        aIn.connect(b.out);
         this.assertNoType(aIn);
-        this.assertHasType(bOut, 'dog');
+        this.assertHasType(b.out, 'dog');
 
-        bIn.connect(cOut);
+        b.in.connect(cOut);
         this.assertNoType(aIn);
-        this.assertHasType(bIn, 'dog');
+        this.assertHasType(b.in, 'dog');
         this.assertHasType(cOut, 'dog');
 
-        bIn.disconnect();
+        b.in.disconnect();
         this.assertNoType(aIn);
-        this.assertHasType(bIn, 'dog');
+        this.assertHasType(b.in, 'dog');
         this.assertNoType(cOut);
 
         aIn.disconnect();
         this.assertNoType(aIn);
-        this.assertNoType(bOut);
+        this.assertNoType(b.out);
         this.assertNoType(cOut);
       });
+
+      runThreeBlockTests();
 
       test('A bound, B unbound, C unbound', function() {
         const [aIn, block] = this.getBlockInput('static_identity');
