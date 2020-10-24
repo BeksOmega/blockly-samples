@@ -340,6 +340,13 @@ suite('NominalConnectionChecker', function() {
       ];
     };
 
+    this.bindConnection = function(conn, binding) {
+      this.checker.bindType(conn.getSourceBlock(), 'T', binding);
+    };
+    this.unbindConnection = function(conn) {
+      this.checker.unbindType(conn.getSourceBlock(), 'T');
+    };
+
     this.assertCanConnect = function(conn1, conn2) {
       chai.assert.isTrue(this.checker.doTypeChecks(conn1, conn2));
     };
@@ -368,65 +375,47 @@ suite('NominalConnectionChecker', function() {
   });
 
   suite('Simple subtyping', function() {
-    test('Exact types', function() {
-      const [dogOut] = this.getBlockOutput('static_dog');
-      const [trainDogIn] = this.getBlockInput('static_train_dog');
-      this.assertCanConnect(dogOut, trainDogIn);
+    clearTwoBlockTests();
+
+    twoBlockTest('Exact types', function() {
+      const dogIn = this.getOuterInput('dog');
+      const dogOut = this.getInnerOutput('dog');
+      this.assertCanConnect(dogIn, dogOut);
     });
 
-    test('Simple super', function() {
-      const [dogOut] = this.getBlockOutput('static_dog');
-      const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
-      this.assertCanConnect(dogOut, milkMammalIn);
+    twoBlockTest('Simple super', function() {
+      const mammalIn = this.getOuterInput('mammal');
+      const dogOut = this.getInnerOutput('dog');
+      this.assertCanConnect(mammalIn, dogOut);
     });
 
-    test('Simple super - statement input', function() {
-
+    twoBlockTest('Multiple supers', function() {
+      const mammalIn = this.getOuterInput('mammal');
+      const flyingAnimalIn = this.getOuterInput('flyinganimal');
+      const batOut = this.getInnerOutput('bat');
+      this.assertCanConnect(mammalIn, batOut);
+      this.assertCanConnect(flyingAnimalIn, batOut);
     });
 
-    test('Simple super - next and prev connections', function() {
-
+    twoBlockTest('Deep supers', function() {
+      const animalIn = this.getOuterInput('animal');
+      const dogOut = this.getInnerOutput('dog');
+      this.assertCanConnect(animalIn, dogOut);
     });
 
-    test('Multiple supers', function() {
-      const [batOut] = this.getBlockOutput('static_bat');
-      const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
-      const [launchFlyingIn] = this.getBlockInput('static_launch_flying');
-      this.assertCanConnect(batOut, milkMammalIn);
-      this.assertCanConnect(batOut, launchFlyingIn);
+    twoBlockTest('Unrelated types', function() {
+      const dogIn = this.getOuterInput('dog');
+      const batOut = this.getInnerOutput('bat');
+      this.assertCannotConnect(dogIn, batOut);
     });
 
-    test('Deep supers', function() {
-      const [dogOut] = this.getBlockOutput('static_dog');
-      const [weighAnimalIn] = this.getBlockInput('static_weigh_animal');
-      this.assertCanConnect(dogOut, weighAnimalIn);
+    twoBlockTest('Backwards types', function() {
+      const dogIn = this.getOuterInput('dog');
+      const mammalOut = this.getInnerOutput('mammal');
+      this.assertCannotConnect(dogIn, mammalOut);
     });
 
-    test('Multiple output checks', function() {
-      const [dogOut] = this.getBlockOutput('static_dog');
-      dogOut.setCheck(['Random', 'dog']);
-      const [trainDogIn] = this.getBlockInput('static_train_dog');
-      this.assertCannotConnect(dogOut, trainDogIn);
-    });
-
-    test('Multiple input checks', function() {
-      const [dogOut] = this.getBlockOutput('static_dog');
-      const [trainDogIn] = this.getBlockInput('static_train_dog');
-      trainDogIn.setCheck(['Random', 'dog']);
-      this.assertCannotConnect(dogOut, trainDogIn);
-    });
-
-    test('Unrelated types', function() {
-      const [batOut] = this.getBlockOutput('static_bat');
-      const [trainDogIn] = this.getBlockInput('static_train_dog');
-      this.assertCannotConnect(batOut, trainDogIn);
-    });
-
-    test('Backwards types', function() {
-      const [mammalOut] = this.getBlockOutput('static_mammal');
-      const [trainDogIn] = this.getBlockInput('static_train_dog');
-      this.assertCannotConnect(mammalOut, trainDogIn);
-    });
+    runTwoBlockTests();
   });
 
   suite('Simple generics', function() {
@@ -686,120 +675,76 @@ suite('NominalConnectionChecker', function() {
 
   suite('Kicking children on programmatic bind', function() {
     setup(function() {
-      Blockly.defineBlocksWithJsonArray([
-        {
-          'type': 'static_statement',
-          'message0': 'Statement %1',
-          'args0': [
-            {
-              'type': 'input_statement',
-              'name': 'INPUT',
-              'check': 'T',
-            },
-          ],
-          'style': 'math_blocks',
-        },
-        {
-          'type': 'static_generic_stack',
-          'message0': 'Stack',
-          'previousStatement': 'T',
-          'nextStatement': 'T',
-        },
-        {
-          'type': 'static_dog_stack',
-          'message0': 'Dog Stack',
-          'previousStatement': 'Dog',
-          'nextStatement': 'Dog',
-        },
-      ]);
+      this.assertIsConnected = function(connection) {
+        chai.assert.isTrue(connection.isConnected());
+      };
+      this.assertIsNotConnected = function(connection) {
+        chai.assert.isFalse(connection.isConnected());
+      };
     });
 
-    teardown(function() {
-      delete Blockly.Blocks['static_statement'];
-      delete Blockly.Blocks['static_generic_stack'];
-      delete Blockly.Blocks['static_dog_stack'];
+    clearTwoBlockTests();
+
+    twoBlockTest('Bind outer, inner valid', function() {
+      const genericIn = this.getOuterInput('t');
+      const dogOut = this.getInnerOutput('dog');
+
+      genericIn.connect(dogOut);
+      this.bindConnection(genericIn, 'dog');
+
+      this.assertIsConnected(genericIn);
     });
 
-    test('Output parent valid', function() {
-      const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
-      const [identityOut, identity] = this.getBlockOutput('static_identity');
-      milkMammalIn.connect(identityOut);
-      this.checker.bindType(identity, 'T', 'Mammal');
-      chai.assert.isTrue(milkMammalIn.isConnected());
+    twoBlockTest('Bind outer, inner invalid', function() {
+      const genericIn = this.getOuterInput('t');
+      const dogOut = this.getInnerOutput('dog');
+
+      genericIn.connect(dogOut);
+      this.bindConnection(genericIn, 'reptile');
+
+      this.assertIsNotConnected(genericIn);
     });
 
-    test('Prev parent valid', function() {
+    twoBlockTest('Bind inner, outer valid', function() {
+      const dogIn = this.getOuterInput('dog');
+      const genericOut = this.getInnerOutput('t');
 
+      dogIn.connect(genericOut);
+      this.bindConnection(genericOut, 'dog');
+
+      this.assertIsConnected(dogIn);
     });
 
-    test('Value child valid', function() {
-      const [identityIn, identity] = this.getBlockInput('static_identity');
-      const [mammalOut] = this.getBlockOutput('static_mammal');
-      identityIn.connect(mammalOut);
-      this.checker.bindType(identity, 'T', 'Mammal');
-      chai.assert.isTrue(identityIn.isConnected());
+    twoBlockTest('Bind inner, outer invalid', function() {
+      const dogIn = this.getOuterInput('dog');
+      const genericOut = this.getInnerOutput('t');
+
+      dogIn.connect(genericOut);
+      this.bindConnection(genericOut, 'reptile');
+
+      this.assertIsNotConnected(dogIn);
     });
 
-    test('Statement child valid', function() {
+    runTwoBlockTests();
 
+    clearSiblingTests();
+
+    siblingTest('Bind main, some inners valid', function() {
+      const main = this.getMain('t');
+      const dogOut = this.getInnerOutput('dog');
+      const catOut = this.getInnerOutput('cat');
+
+      this.bindConnection(main.out, 'mammal');
+      main.in1.connect(dogOut);
+      main.in2.connect(catOut);
+      this.unbindConnection(main.out);
+      this.bindConnection(main.out, 'dog');
+
+      this.assertIsConnected(main.in1);
+      this.assertIsNotConnected(main.in2);
     });
 
-    test('Next child valid', function() {
-
-    });
-
-    test('Prev and next valid', function() {
-
-    });
-
-    test('Some value children valid', function() {
-      const [selectRandomIn1, selectRandom] =
-          this.getBlockInput('static_select_random');
-      const selectRandomIn2 = selectRandom.getInput('INPUT2').connection;
-      const [dogOut] = this.getBlockOutput('static_dog');
-      const [catOut] = this.getBlockOutput('static_cat');
-
-      this.checker.bindType(selectRandom, 'T', 'Mammal');
-      selectRandomIn1.connect(dogOut);
-      selectRandomIn2.connect(catOut);
-      this.checker.unbindType(selectRandom, 'T');
-      this.checker.bindType(selectRandom, 'T', 'Dog');
-
-      chai.assert.isTrue(selectRandomIn1.isConnected());
-      chai.assert.isFalse(selectRandomIn2.isConnected());
-    });
-
-    test('Some statement children valid', function() {
-
-    });
-
-    test('Output parent invalid', function() {
-      const [milkMammalIn] = this.getBlockInput('static_milk_mammal');
-      const [identityOut, identity] = this.getBlockOutput('static_identity');
-      milkMammalIn.connect(identityOut);
-      this.checker.bindType(identity, 'T', 'reptile');
-      chai.assert.isFalse(milkMammalIn.isConnected());
-    });
-
-    test('Prev parent invalid', function() {
-
-    });
-
-    test('Value child invalid', function() {
-      const [identityIn, identity] = this.getBlockInput('static_identity');
-      const [mammalOut] = this.getBlockOutput('static_mammal');
-      identityIn.connect(mammalOut);
-      this.checker.bindType(identity, 'T', 'reptile');
-      chai.assert.isFalse(identityIn.isConnected());
-    });
-
-    test('Statement child invalid', function() {
-
-    });
-
-    test('Next child invalid', function() {
-
-    });
+    runSiblingTests();
   });
 
   // This suite checks that bindings get updated correctly. It doesn't have
@@ -816,12 +761,6 @@ suite('NominalConnectionChecker', function() {
         const explicitTypes = this.checker.getExplicitTypes(
             conn.getSourceBlock(), 'T');
         chai.assert.include(explicitTypes, binding);
-      };
-      this.bindConnection = function(conn, binding) {
-        this.checker.bindType(conn.getSourceBlock(), 'T', binding);
-      };
-      this.unbindConnection = function(conn) {
-        this.checker.unbindType(conn.getSourceBlock(), 'T');
       };
     });
 
