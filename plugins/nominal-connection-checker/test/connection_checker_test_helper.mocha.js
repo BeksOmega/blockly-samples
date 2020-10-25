@@ -8,11 +8,162 @@
  * @fileoverview Helpers for tests of the NominalConnectionChecker.
  */
 
+export function createBlockDefs(types) {
+  const blocks = [];
+  for (let type of types) {
+    type = type.toLowerCase();
+    blocks.push({
+      'type': 'static_' + type + '_outer_value',
+      'message0': '%1',
+      'args0': [
+        {
+          'type': 'input_value',
+          'name': 'INPUT1',
+          'check': [type],
+        },
+      ],
+    });
+    blocks.push({
+      'type': 'static_' + type + '_outer_statement',
+      'message0': '%1',
+      'args0': [
+        {
+          'type': 'input_statement',
+          'name': 'INPUT1',
+          'check': [type],
+        },
+      ],
+    });
+    blocks.push({
+      'type': 'static_' + type + '_outer_next',
+      'message0': '',
+      'nextStatement': [type],
+    });
+
+    blocks.push({
+      'type': 'static_' + type + '_inner_out',
+      'message0': '',
+      'output': [type],
+    });
+    blocks.push({
+      'type': 'static_' + type + '_inner_prev',
+      'message0': '',
+      'previousStatement': [type],
+    });
+
+    blocks.push({
+      'type': 'static_' + type + '_main_out_value',
+      'message0': '%1 %2 %3',
+      'args0': [
+        {
+          'type': 'input_value',
+          'name': 'INPUT1',
+          'check': [type],
+        },
+        {
+          'type': 'input_value',
+          'name': 'INPUT2',
+          'check': [type],
+        },
+        {
+          'type': 'input_value',
+          'name': 'INPUT3',
+          'check': [type],
+        },
+      ],
+      'output': [type],
+    });
+    blocks.push({
+      'type': 'static_' + type + '_main_out_statement',
+      'message0': '%1 %2 %3',
+      'args0': [
+        {
+          'type': 'input_statement',
+          'name': 'INPUT1',
+          'check': [type],
+        },
+        {
+          'type': 'input_statement',
+          'name': 'INPUT2',
+          'check': [type],
+        },
+        {
+          'type': 'input_statement',
+          'name': 'INPUT3',
+          'check': [type],
+        },
+      ],
+      'output': [type],
+    });
+    blocks.push({
+      'type': 'static_' + type + '_main_out_next',
+      'message0': '',
+      'output': [type],
+      'nextStatement': [type],
+    });
+    blocks.push({
+      'type': 'static_' + type + '_main_prev_value',
+      'message0': '%1 %2 %3',
+      'args0': [
+        {
+          'type': 'input_value',
+          'name': 'INPUT1',
+          'check': [type],
+        },
+        {
+          'type': 'input_value',
+          'name': 'INPUT2',
+          'check': [type],
+        },
+        {
+          'type': 'input_value',
+          'name': 'INPUT3',
+          'check': [type],
+        },
+      ],
+      'previousStatement': [type],
+    });
+    blocks.push({
+      'type': 'static_' + type + '_main_prev_statement',
+      'message0': '%1 %2 %3',
+      'args0': [
+        {
+          'type': 'input_statement',
+          'name': 'INPUT1',
+          'check': [type],
+        },
+        {
+          'type': 'input_statement',
+          'name': 'INPUT2',
+          'check': [type],
+        },
+        {
+          'type': 'input_statement',
+          'name': 'INPUT3',
+          'check': [type],
+        },
+      ],
+      'previousStatement': [type],
+    });
+    blocks.push({
+      'type': 'static_' + type + '_main_prev_next',
+      'message0': '',
+      'previousStatement': [type],
+      'nextStatement': [type],
+    });
+  }
+  return blocks;
+}
+
 const twoBlockTests = [];
 
 export function twoBlockTest(name, fn) {
-  twoBlockTests.push({name: name, fn: fn});
+  twoBlockTests.push({name: name, fn: fn, skip: false});
 }
+
+twoBlockTest.skip = function(name, fn) {
+  twoBlockTests.push({name: name, fn: fn, skip: true});
+};
 
 export function clearTwoBlockTests() {
   twoBlockTests.length = 0;
@@ -83,6 +234,10 @@ const threeBlockTests = [];
 export function threeBlockTest(name, fn) {
   threeBlockTests.push({name: name, fn: fn});
 }
+
+threeBlockTest.skip = function(name, fn) {
+  threeBlockTests.push({name: name, fn: fn, skip: true});
+};
 
 export function clearThreeBlockTests() {
   threeBlockTests.length = 0;
@@ -367,6 +522,10 @@ export function siblingTest(name, fn) {
   siblingTests.push({name: name, fn: fn});
 }
 
+siblingTest.skip = function(name, fn) {
+  siblingTests.push({name: name, fn: fn, skip: true});
+};
+
 export function clearSiblingTests() {
   siblingTests.length = 0;
 }
@@ -471,7 +630,11 @@ export function runSiblingTests() {
 
 
 function runTests(tests) {
-  for (const {name, fn} of tests) {
-    test(name, fn);
+  for (const {name, fn, skip} of tests) {
+    if (skip) {
+      test.skip(name, fn);
+    } else {
+      test(name, fn);
+    }
   }
 }
