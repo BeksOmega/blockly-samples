@@ -217,9 +217,6 @@ export class TypeHierarchy {
     const superStructure = this.parseType_(superType);
 
     return this.types_.get(subStructure.name).hasAncestor(superStructure.name);
-
-    // return this.types_.get(subName.toLowerCase())
-    //     .hasAncestor(superName.toLowerCase());
   }
 
   /**
@@ -251,12 +248,7 @@ export class TypeHierarchy {
   }
 
   // TODO: Might be useful to look into how lexers do this.
-  /**
-   *
-   * @param str
-   * @return {TypeStructure}
-   * @private
-   */
+  // TODO: Move all the TypeStructure stuff into its own file in the next PR.
   parseType_(str) {
     const typeStruct = {};
     const bracketIndex = str.indexOf('[');
@@ -435,7 +427,7 @@ class TypeDef {
    *     the parameter will be added at the end.
    */
   addParam(paramName, variance, index = undefined) {
-    const param = new Param(paramName, variance);
+    const param = new ParamDef(paramName, variance);
     if (index != undefined) {
       this.params_.splice(index, param);
     } else {
@@ -559,20 +551,28 @@ class TypeDef {
 
   /**
    * Returns an array of this type's parameters, in the order for its superType.
-   * @param {string} ancestorName The name of the ancestor to get the parameters
-   *     for.
+   * @param {string} ancestorName The caseless name of the ancestor to get the
+   *     parameters for.
    * @param {!Array<!TypeStructure>=} explicitTypes Optional explicit types to
    *     substitute for parameters.
    * @return {!Array<!TypeStructure>} This type's parameters, in the order for
    *     its superType.
    */
   getParamsForAncestor(ancestorName, explicitTypes = undefined) {
+    if (ancestorName == this.name && !this.paramsMap_.has(this.name)) {
+      // Convert this type's params to a type structure.
+      this.paramsMap_.set(
+          this.name,
+          this.params_.map((param) => {
+            return {name: param.name, params: []};
+          }));
+    }
     // TODO: Add support for the explicit types.
     return this.paramsMap_.get(ancestorName);
   }
 
   getIndexOfParam(paramName) {
-    return this.params_.indexOf((param) => param.name == paramName);
+    return this.params_.findIndex((param) => param.name == paramName);
   }
 
   getParamForIndex(index) {
@@ -612,7 +612,7 @@ function stringToVariance(str) {
 /**
  * Represents a type parameter.
  */
-class Param {
+class ParamDef {
   /**
    * Constructs the type parameter given its name and variance.
    * @param {string} name The caseless name of the type parameter.
@@ -622,31 +622,13 @@ class Param {
     /**
      * The caseless name of this type parameter.
      * @type {string}
-     * @private
      */
-    this.name_ = name;
+    this.name = name;
 
     /**
      * The variance of this type parameter.
      * @type {!Variance}
-     * @private
      */
-    this.variance_ = variance;
-  }
-
-  /**
-   * Returns the name of this parameter.
-   * @return {string} The name of this parameter.
-   */
-  getName() {
-    return this.name_;
-  }
-
-  /**
-   * Returns the variance of this parameter.
-   * @return {!Variance} The variance of this parameter.
-   */
-  getVariance() {
-    return this.variance_;
+    this.variance = variance;
   }
 }
