@@ -41,6 +41,7 @@ export class TypeStructure {
  * @param {string} str The string to parse.
  * @param {boolean=} caseless Whether we should convert names to lowercase
  *     (caseless).
+<<<<<<< HEAD
  * @return {!TypeStructure} The created TypeStructure.
  */
 export function parseType(str, caseless = true) {
