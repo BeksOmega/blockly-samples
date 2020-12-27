@@ -22,7 +22,7 @@ suite('Hierarchy Validation', function() {
     this.errorStub.restore();
   });
 
-  suite('Correct type', function() {
+  suite.skip('Correct type', function() {
     test('Object', function() {
       validateHierarchy({});
       chai.assert.isTrue(this.errorStub.notCalled);
@@ -43,7 +43,7 @@ suite('Hierarchy Validation', function() {
     });
   });
 
-  suite('Conflicts', function() {
+  suite.skip('Conflicts', function() {
     const conflictMsg =
         'The type name \'%s\' conflicts with the type name(s) %s';
 
@@ -135,9 +135,48 @@ suite('Hierarchy Validation', function() {
       });
       chai.assert.isTrue(this.errorStub.notCalled);
     });
+
+    test('Defined with params', function() {
+      validateHierarchy({
+        'typeA': {
+          'fulfills': ['typeB[A]'],
+          'params': [
+            {
+              'name': 'A',
+              'variance': 'co',
+            },
+          ],
+        },
+        'typeB': {
+          'params': [
+            {
+              'name': 'A',
+              'variance': 'co',
+            },
+          ],
+        },
+      });
+      chai.assert.isTrue(this.errorStub.notCalled);
+    });
+
+    test('Undefined with params', function() {
+      validateHierarchy({
+        'typeA': {
+          'fulfills': ['typeB[A]'],
+          'params': [
+            {
+              'name': 'A',
+              'variance': 'co',
+            },
+          ],
+        },
+      });
+      chai.assert.isTrue(this.errorStub.calledOnce);
+      chai.assert.isTrue(this.errorStub.calledWith(errorMsg, 'typeA', 'typeB'));
+    });
   });
 
-  suite('Circular Dependencies', function() {
+  suite.skip('Circular Dependencies', function() {
     test('No cycles', function() {
       validateHierarchy({
         'typeA': {
@@ -291,7 +330,7 @@ suite('Hierarchy Validation', function() {
     });
   });
 
-  suite('Generics', function() {
+  suite.skip('Generics', function() {
     const errorMsg = 'The type %s will act like a generic type if used as a ' +
         'connection check, because it is a single character.';
 
@@ -342,7 +381,7 @@ suite('Hierarchy Validation', function() {
     });
   });
 
-  suite('Characters', function() {
+  suite.skip('Characters', function() {
     setup(function() {
       const errorMsg = 'The type %s includes an illegal %s character (\'%s\').';
 
