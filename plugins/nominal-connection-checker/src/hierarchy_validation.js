@@ -80,7 +80,7 @@ function checkSupersDefined(hierarchyDef) {
   const types = new Set();
   const keys = Object.keys(hierarchyDef);
   for (const type of keys) {
-    types.add(parseType(type).name.toLowerCase());
+    types.add(type.toLowerCase());
   }
   for (const type of keys) {
     const typeInfo = hierarchyDef[type];
@@ -90,7 +90,7 @@ function checkSupersDefined(hierarchyDef) {
     for (const superType of typeInfo.fulfills) {
       const superName = parseType(superType, false).name;
       if (!types.has(superName.toLowerCase())) {
-        console.error(errorMsg, parseType(type, false).name, superName);
+        console.error(errorMsg, type, superName);
       }
     }
   }

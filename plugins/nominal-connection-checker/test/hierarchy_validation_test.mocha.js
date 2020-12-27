@@ -22,7 +22,7 @@ suite('Hierarchy Validation', function() {
     this.errorStub.restore();
   });
 
-  suite.skip('Correct type', function() {
+  suite('Correct type', function() {
     test('Object', function() {
       validateHierarchy({});
       chai.assert.isTrue(this.errorStub.notCalled);
@@ -43,7 +43,7 @@ suite('Hierarchy Validation', function() {
     });
   });
 
-  suite.skip('Conflicts', function() {
+  suite('Conflicts', function() {
     const conflictMsg =
         'The type name \'%s\' conflicts with the type name(s) %s';
 
@@ -176,7 +176,7 @@ suite('Hierarchy Validation', function() {
     });
   });
 
-  suite.skip('Circular Dependencies', function() {
+  suite('Circular Dependencies', function() {
     test('No cycles', function() {
       validateHierarchy({
         'typeA': {
@@ -330,7 +330,7 @@ suite('Hierarchy Validation', function() {
     });
   });
 
-  suite.skip('Generics', function() {
+  suite('Generics', function() {
     const errorMsg = 'The type %s will act like a generic type if used as a ' +
         'connection check, because it is a single character.';
 
@@ -381,7 +381,7 @@ suite('Hierarchy Validation', function() {
     });
   });
 
-  suite.skip('Characters', function() {
+  suite('Characters', function() {
     setup(function() {
       const errorMsg = 'The type %s includes an illegal %s character (\'%s\').';
 
