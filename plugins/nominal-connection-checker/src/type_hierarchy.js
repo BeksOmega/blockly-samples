@@ -578,7 +578,7 @@ class TypeDef {
  * Represents different parameter variances.
  * @enum {string}
  */
-const Variance = {
+export const Variance = {
   CO: 'covariant',
   CONTRA: 'contravariant',
   INV: 'invariant',
@@ -589,7 +589,7 @@ const Variance = {
  * @param {string} str The string to convert to a variance.
  * @return {!Variance} The converted variance value.
  */
-function stringToVariance(str) {
+export function stringToVariance(str) {
   str = str.toLowerCase();
   if (str.startsWith('inv')) {
     return Variance.INV;
@@ -602,6 +602,8 @@ function stringToVariance(str) {
         'Valid variances are: "co", "contra", and "inv".');
   }
 }
+
+
 
 /**
  * Represents a type parameter.
