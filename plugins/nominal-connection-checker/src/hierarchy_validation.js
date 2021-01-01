@@ -108,6 +108,11 @@ function checkParamNames(hierarchyDef) {
   }
 }
 
+/**
+ * Checks the hierarchy definition for any type parameters with conflicting
+ * names.
+ * @param {!Object} hierarchyDef The definition of the type hierarchy.
+ */
 function checkConflictingParams(hierarchyDef) {
   const conflictMsg = 'The param name %s in %s conflicts with the ' +
       'param(s) [%s]';
@@ -172,7 +177,7 @@ function checkParamVariances(hierarchyDef) {
         stringToVariance(param.variance);
       } catch (e) {
         if (e instanceof VarianceError) {
-          console.error(errorMsg, param.name, type, e.message);
+          console.error(errorMsg, param.name, type, e);
         } else {
           throw e;
         }

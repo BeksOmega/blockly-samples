@@ -1255,9 +1255,7 @@ suite('Hierarchy Validation', function() {
       });
       chai.assert.isTrue(this.errorStub.calledOnce);
       chai.assert.isTrue(
-          this.errorStub.calledWith(errorMsg, 'A', 'typeA',
-              'The variance "test" is not a valid variance. Valid variances ' +
-              'are: "co", "contra", and "inv".'));
+          this.errorStub.calledWith(errorMsg, 'A', 'typeA'));
     });
   });
 
