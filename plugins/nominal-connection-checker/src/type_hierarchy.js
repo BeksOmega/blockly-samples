@@ -299,7 +299,7 @@ class TypeDef {
     this.descendants_.add(this.name);
 
     /**
-     * The caseless names of the parameters of this type.
+     * The parameters of this type.
      * @type {!Array<ParamDef>}
      * @private
      */
@@ -521,6 +521,15 @@ class TypeDef {
       params.forEach(replaceFn, this);
     }
     return params;
+  }
+
+  /**
+   * Returns a new array of all the parameter definitions for this type.
+   * @return {!Array<ParamDef>} A new set of all the parameter definitions for
+   *     this type.
+   */
+  parameters() {
+    return [...this.params_];
   }
 
   /**

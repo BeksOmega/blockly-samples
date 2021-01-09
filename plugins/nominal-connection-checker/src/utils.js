@@ -4,10 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 /**
  * @fileoverview A file defining helper functions useful in multiple modules.
  */
+
+
+import {parseType} from './type_structure';
+
 
 /**
  * Returns the type name (which could be generic) associated with the
@@ -42,9 +45,10 @@ export function isGeneric(type) {
  * @private
  */
 export function isExplicit(type) {
-  return type.length > 1;
+  return !isGeneric(type);
 }
 
+// TODO: Update these descriptions to be more accurate.
 /**
  * Returns true if the connection has a generic connection check. False
  * otherwise.
@@ -55,7 +59,13 @@ export function isExplicit(type) {
  * @private
  */
 export function isGenericConnection(connection) {
-  return isGeneric(getCheck(connection));
+  function isGenericRec(typeStruct) {
+    if (isGeneric(typeStruct.name)) {
+      return true;
+    }
+    return typeStruct.params.some((param) => isGenericRec(param));
+  }
+  return isGenericRec(parseType(getCheck(connection)));
 }
 
 /**
@@ -68,5 +78,5 @@ export function isGenericConnection(connection) {
  * @private
  */
 export function isExplicitConnection(connection) {
-  return isExplicit(getCheck(connection));
+  return !isGenericConnection(connection);
 }

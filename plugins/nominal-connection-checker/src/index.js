@@ -11,7 +11,9 @@
 
 import * as Blockly from 'blockly/core';
 import {TypeHierarchy} from './type_hierarchy';
-import {getCheck, isExplicitConnection, isGenericConnection} from './utils';
+import {getCheck, isExplicitConnection,
+  isGenericConnection, isGeneric} from './utils';
+import {parseType, structureToString} from './type_structure';
 
 
 /**
@@ -107,8 +109,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    *     genericType.
    * @param {string} genericType The generic type we want to get the explicit
    *     type of.
-   * @return {!Array<string>} The explicit type bound to the generic type, if
-   *     one can be found. Undefined otherwise.
+   * @return {!Array<string>|undefined} The explicit type bound to the generic
+   *     type, if one can be found. Undefined otherwise.
    */
   getExplicitTypes(block, genericType) {
     genericType = genericType.toLowerCase();
@@ -129,8 +131,59 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    */
   getExplicitTypesOfConnection(connection) {
     const check = getCheck(connection);
-    return isExplicitConnection(connection) ? [check]:
-        this.getExplicitTypes(connection.getSourceBlock(), check);
+    if (isExplicitConnection(connection)) {
+      return [check];
+    }
+
+    const structure = parseType(check);
+    const block = connection.getSourceBlock();
+    const boundTypes = new Map();
+
+    function getExplicitTypesRec(typeStruct) {
+      const name = typeStruct.name;
+      if (isGeneric(name) && !boundTypes.has(name)) {
+        const explicitTypes = this.getExplicitTypes(block, name);
+        if (explicitTypes.length) {
+          boundTypes.set(name, explicitTypes);
+        }
+      }
+      typeStruct.params.forEach((param) => getExplicitTypesRec(param));
+    }
+    getExplicitTypesRec(structure);
+
+    // TODO: I think we need to create every combination of bound types, but
+    //  I need to come up with a good example to test.
+    // TODO: What if one generic type is bound to an explicit type that has
+    //  generic parameters?
+    const types = [structure];
+    for (const [genericType, explicitTypes] of boundTypes) {
+      // Note: neither flatMap() nor flat() work on Node 10. See #431.
+      types
+          .map((typeStruct) => {
+            const newTypes = [];
+
+            explicitTypes.forEach((explicitType) => {
+              function replaceRec(replaceStruct) {
+                if (replaceStruct.name == genericType) {
+                  replaceStruct.name = explicitType;
+                }
+                replaceStruct.forEach((param) => replaceRec(param));
+              }
+
+              // Deep copy structure.
+              const newType = parseType(structureToString(typeStruct));
+              replaceRec(newType);
+              newTypes.push(newType);
+            });
+
+            return newTypes;
+          })
+          .reduce((flat, toFlatten) => {
+            return [...flat, ...toFlatten];
+          }, []);
+    }
+
+    return types.map((typeStruct) => structureToString(typeStruct));
   }
 
   /**
