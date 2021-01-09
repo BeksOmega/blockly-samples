@@ -59,13 +59,18 @@ export function isExplicit(type) {
  * @private
  */
 export function isGenericConnection(connection) {
+  // TODO: Decide if we want empty checks to be generic.
+  const check = getCheck(connection);
+  if (!check) {
+    return false;
+  }
   function isGenericRec(typeStruct) {
     if (isGeneric(typeStruct.name)) {
       return true;
     }
     return typeStruct.params.some((param) => isGenericRec(param));
   }
-  return isGenericRec(parseType(getCheck(connection)));
+  return isGenericRec(parseType(check));
 }
 
 /**
@@ -78,5 +83,9 @@ export function isGenericConnection(connection) {
  * @private
  */
 export function isExplicitConnection(connection) {
+  const check = getCheck(connection);
+  if (!check) {
+    return false;
+  }
   return !isGenericConnection(connection);
 }
