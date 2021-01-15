@@ -10,7 +10,7 @@
  */
 'use strict';
 
-import {TypeStructure, parseType} from './type_structure';
+import {TypeStructure, parseType, structureToString} from './type_structure';
 
 
 /**
@@ -206,7 +206,7 @@ export class TypeHierarchy {
       return false;
     }
     return type1.params.every((type1Param, i) => {
-      this.typeIsExactlyType(type1Param, type2.params[i]);
+      return this.typeIsExactlyType(type1Param, type2.params[i]);
     });
   }
 
@@ -232,7 +232,8 @@ export class TypeHierarchy {
     // TODO: We need to add checks to make sure the number of actual params for
     //  the subtype is correct. Here and in typeIsExactlyType.
 
-    const orderedSubParams = subDef.getParamsForAncestor(superType.name);
+    const orderedSubParams = subDef.getParamsForAncestor(
+        superType.name, subType.params);
     return superType.params.every((actualSuper, i) => {
       const actualSub = orderedSubParams[i];
       const paramDef = superDef.getParamForIndex(i);
@@ -538,7 +539,9 @@ class TypeDef {
             return {name: param.name, params: []};
           }));
     }
-    const params = this.paramsMap_.get(ancestorName);
+    // Deep copy structure so that we don't have to worry about corruption.
+    const params = this.paramsMap_.get(ancestorName)
+        .map((param) => parseType(structureToString(param)));
     if (actualTypes) {
       const replaceFn = (param, i, array) => {
         const paramIndex = this.getIndexOfParam(param.name);
