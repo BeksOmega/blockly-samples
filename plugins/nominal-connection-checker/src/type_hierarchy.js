@@ -265,18 +265,14 @@ export class TypeHierarchy {
     }
 
     const getNearestCommonParentsRec = (typeStructs) => {
-      console.log(typeStructs);
       // Get the common parents for the "outer" type.
       const commonParents = typeStructs.reduce((accumulator, currType) => {
         const nearestCommonParentsMap =
             this.nearestCommonParents_.get(currType.name);
-        // if (!nearestCommonParentsMap)
-        //   console.log('bad', currType);
-        // else
-        //   console.log('good', currType);
         return accumulator
             .flatMap((type) => {
-              return new TypeStructure(nearestCommonParentsMap.get(type.name));
+              return nearestCommonParentsMap.get(type.name).map((parentName) =>
+                new TypeStructure(parentName));
             })
             // Get rid of duplicates.
             .filter((type, i, array) => {
@@ -303,6 +299,10 @@ export class TypeHierarchy {
           });
         });
 
+        if (!paramsLists.length) {
+          return [parent];
+        }
+
         // Change the paramsLists to an array of arrays of *nearest common
         // parents* of the types that are currently in the paramsLists.
         paramsLists = paramsLists.map(
@@ -317,8 +317,10 @@ export class TypeHierarchy {
           return combine([combined, ...rest]);
         };
 
+
         // Create all the combinations of parameters (nearestCommonParents
         // should not allow for duplicates).
+        paramsLists[0] = paramsLists[0].map((val) => [val]);
         const combinations = combine(paramsLists);
 
         // Turn parameter combinations into versions of the parent
@@ -332,19 +334,6 @@ export class TypeHierarchy {
     };
 
     return getNearestCommonParentsRec(types);
-
-    /*types = types.map((type) => type.toLowerCase());
-    return types.reduce((accumulator, currType) => {
-      const nearestCommonParentsMap =
-          this.nearestCommonParents_.get(currType);
-      return accumulator
-          .flatMap((type) => {
-            return nearestCommonParentsMap.get(type);
-          })
-          .filter((type, i, array) => {
-            return array.indexOf(type) == i;
-          });
-    }, [types[0]]);*/
   }
 
   /**
