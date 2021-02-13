@@ -86,7 +86,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
       return childTypes.some((childType) => {
         return parentTypes.some((parentType) => {
           return typeHierarchy
-              .getNearestCommonParents(childType, parentType).length;
+              .getNearestCommonParents(
+                  parseType(childType), parseType(parentType)).length;
         });
       });
     }
@@ -278,7 +279,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
         block.nextConnection, genericType, connectionToSkip));
 
     if (types.length) {
-      return this.getTypeHierarchy_().getNearestCommonParents(...types);
+      return this.getTypeHierarchy_().getNearestCommonParents(
+          ...types.map(((type) => parseType(type))));
     }
     return [];
   }

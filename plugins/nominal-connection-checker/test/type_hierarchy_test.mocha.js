@@ -1012,7 +1012,7 @@ suite('TypeHierarchy', function() {
     });
   });
 
-  suite('typeIsExactlyType', function() {
+  suite.only('typeIsExactlyType', function() {
     setup(function() {
       this.assertMatch = function(hierarchy, sub, sup, msg) {
         chai.assert.isTrue(
