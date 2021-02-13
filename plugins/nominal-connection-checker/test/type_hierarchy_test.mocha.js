@@ -12,7 +12,7 @@ const chai = require('chai');
 
 const {TypeHierarchy, ActualParamsCountError} =
     require('../src/type_hierarchy');
-const {parseType} = require('../src/type_structure');
+const {parseType, structureToString} = require('../src/type_structure');
 
 suite('TypeHierarchy', function() {
   test('Super not defined', function() {
@@ -28,7 +28,6 @@ suite('TypeHierarchy', function() {
         ' defined');
   });
 
-  // TODO: Move this into typeFulfillsType once checking is added.
   suite('getParamsForAncestor', function() {
     suite('No substitution', function() {
       setup(function() {
@@ -1012,7 +1011,7 @@ suite('TypeHierarchy', function() {
     });
   });
 
-  suite.only('typeIsExactlyType', function() {
+  suite('typeIsExactlyType', function() {
     setup(function() {
       this.assertMatch = function(hierarchy, sub, sup, msg) {
         chai.assert.isTrue(
@@ -2375,23 +2374,39 @@ suite('TypeHierarchy', function() {
     });
   });
 
-  suite('nearestCommonParents', function() {
+  suite.only('nearestCommonParents', function() {
+    setup(function() {
+      this.assertNearestCommonParents = function(hierarchy, toUnify, expected) {
+        const actual = hierarchy.getNearestCommonParents(
+            ...toUnify.map((type) => parseType(type)));
+        actual.forEach((typeStruct, i) => {
+          if (!typeStruct.equals((parseType(expected[i])))) {
+            chai.assert.fail('Expected ' + expected[i] + ' to equal ' +
+                structureToString(typeStruct));
+          }
+        });
+      };
+      this.assertNoNearestCommonParents = function(hierarchy, toUnify) {
+        const actual = hierarchy.getNearestCommonParents(
+            ...toUnify.map((type) => parseType(type)));
+        chai.assert.isArray(actual);
+        chai.assert.isEmpty(actual);
+      };
+    });
+
     suite('Variable Arguments', function() {
       test('No args', function() {
         const hierarchy = new TypeHierarchy({
           'typeA': {},
         });
-        const union = hierarchy.getNearestCommonParents();
-        chai.assert.isArray(union);
-        chai.assert.isEmpty(union);
+        this.assertNoNearestCommonParents(hierarchy, []);
       });
 
       test('One arg', function() {
         const hierarchy = new TypeHierarchy({
           'typeA': {},
         });
-        const union = hierarchy.getNearestCommonParents('typeA');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(hierarchy, ['typeA'], ['typeA']);
       });
     });
 
@@ -2400,8 +2415,8 @@ suite('TypeHierarchy', function() {
         const hierarchy = new TypeHierarchy({
           'typeA': {},
         });
-        const union = hierarchy.getNearestCommonParents('typeA', 'typeA');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeA', 'typeA'], ['typeA']);
       });
 
       test('Unify parent', function() {
@@ -2411,8 +2426,8 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeA'],
           },
         });
-        const union = hierarchy.getNearestCommonParents('typeB', 'typeA');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeB', 'typeA'], ['typeA']);
       });
 
       test('Unify parsib', function() {
@@ -2428,8 +2443,8 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeB'],
           },
         });
-        const union = hierarchy.getNearestCommonParents('typeD', 'typeC');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeD', 'typeC'], ['typeA']);
       });
 
       test('Unify grandparent', function() {
@@ -2442,8 +2457,8 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeB'],
           },
         });
-        const union = hierarchy.getNearestCommonParents('typeC', 'typeA');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeC', 'typeA'], ['typeA']);
       });
 
       test('Unify grandparsib', function() {
@@ -2462,8 +2477,8 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeD'],
           },
         });
-        const union = hierarchy.getNearestCommonParents('typeE', 'typeC');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeE', 'typeC'], ['typeA']);
       });
 
       test('Unify sibling', function() {
@@ -2476,8 +2491,8 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeA'],
           },
         });
-        const union = hierarchy.getNearestCommonParents('typeB', 'typeC');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeB', 'typeC'], ['typeA']);
       });
 
       test('Unify cousin', function() {
@@ -2496,8 +2511,8 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeC'],
           },
         });
-        const union = hierarchy.getNearestCommonParents('typeD', 'typeE');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeD', 'typeE'], ['typeA']);
       });
 
       test('Unify second cousin', function() {
@@ -2522,8 +2537,8 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeE'],
           },
         });
-        const union = hierarchy.getNearestCommonParents('typeF', 'typeG');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeF', 'typeG'], ['typeA']);
       });
 
       test('Unify first cousin once removed', function() {
@@ -2548,8 +2563,8 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeE'],
           },
         });
-        const union = hierarchy.getNearestCommonParents('typeD', 'typeG');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeD', 'typeG'], ['typeA']);
       });
 
       test('Unify child', function() {
@@ -2559,8 +2574,8 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeA'],
           },
         });
-        const union = hierarchy.getNearestCommonParents('typeA', 'typeB');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeA', 'typeB'], ['typeA']);
       });
 
       test('Unify nibling', function() {
@@ -2576,8 +2591,8 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeB'],
           },
         });
-        const union = hierarchy.getNearestCommonParents('typeC', 'typeD');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeC', 'typeD'], ['typeA']);
       });
 
       test('Unify grandnibling', function() {
@@ -2596,8 +2611,8 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeD'],
           },
         });
-        const union = hierarchy.getNearestCommonParents('typeC', 'typeE');
-        chai.assert.deepEqual(union, ['typea']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeC', 'typeE'], ['typeA']);
       });
 
       test('Unify unrelated', function() {
@@ -2605,9 +2620,7 @@ suite('TypeHierarchy', function() {
           'typeA': {},
           'typeB': {},
         });
-        const union = hierarchy.getNearestCommonParents('typeA', 'typeB');
-        chai.assert.isArray(union);
-        chai.assert.isEmpty(union);
+        this.assertNoNearestCommonParents(hierarchy, ['typeA', 'typeB']);
       });
     });
 
@@ -2647,32 +2660,27 @@ suite('TypeHierarchy', function() {
       });
 
       test('X and Y', function() {
-        const union = hierarchy.getNearestCommonParents('typeX', 'typeY');
-        chai.assert.deepEqual(union, ['typez', 'typeu']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeX', 'typeY'], ['typeZ', 'typeU']);
       });
 
       test('X, Y and Z', function() {
-        const union = hierarchy.getNearestCommonParents(
-            'typeX', 'typeY', 'typeZ');
-        chai.assert.deepEqual(union, ['typez']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeX', 'typeY', 'typeZ'], ['typeZ']);
       });
 
       test('X, Y and W', function() {
-        const union = hierarchy.getNearestCommonParents(
-            'typeX', 'typeY', 'typeW');
-        chai.assert.deepEqual(union, ['typew']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeX', 'typeY', 'typeW'], ['typeW']);
       });
 
       test('X, Y and V', function() {
-        const union = hierarchy.getNearestCommonParents(
-            'typeX', 'typeY', 'typeV');
-        chai.assert.deepEqual(union, ['typew', 'typeu']);
+        this.assertNearestCommonParents(
+            hierarchy, ['typeX', 'typeY', 'typeV'], ['typeW', 'typeU']);
       });
 
       test('U and W', function() {
-        const union = hierarchy.getNearestCommonParents('typeU', 'typeW');
-        chai.assert.isArray(union);
-        chai.assert.isEmpty(union);
+        this.assertNoNearestCommonParents(hierarchy, ['typeU', 'typeW']);
       });
     });
 
@@ -2690,20 +2698,17 @@ suite('TypeHierarchy', function() {
         });
 
         test('C and D', function() {
-          const union = hierarchy.getNearestCommonParents('typeC', 'typeD');
-          chai.assert.deepEqual(union, ['typea', 'typeb']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeC', 'typeD'], ['typeA', 'typeB']);
         });
 
         test('C, D and A', function() {
-          const union = hierarchy.getNearestCommonParents(
-              'typeC', 'typeD', 'typeA');
-          chai.assert.deepEqual(union, ['typea']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeC', 'typeD', 'typeA'], ['typeA']);
         });
 
         test('A and B', function() {
-          const union = hierarchy.getNearestCommonParents('typeA', 'typeB');
-          chai.assert.isArray(union);
-          chai.assert.isEmpty(union);
+          this.assertNoNearestCommonParents(hierarchy, ['typeA', 'typeB']);
         });
       });
 
@@ -2724,43 +2729,38 @@ suite('TypeHierarchy', function() {
         });
 
         test('D and E', function() {
-          const union = hierarchy.getNearestCommonParents('typeD', 'typeE');
-          chai.assert.deepEqual(union, ['typea', 'typeb']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeD', 'typeE'], ['typeA', 'typeB']);
         });
 
         test('E and F', function() {
-          const union = hierarchy.getNearestCommonParents('typeE', 'typeF');
-          chai.assert.deepEqual(union, ['typeb', 'typec']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeE', 'typeF'], ['typeB', 'typeC']);
         });
 
         test('D and F', function() {
-          const union = hierarchy.getNearestCommonParents('typeD', 'typeF');
-          chai.assert.deepEqual(union, ['typeb']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeD', 'typeF'], ['typeB']);
         });
 
         test('D, E and F', function() {
-          const union = hierarchy.getNearestCommonParents(
-              'typeD', 'typeE', 'typeF');
-          chai.assert.deepEqual(union, ['typeb']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeD', 'typeE', 'typeF'], ['typeB']);
         });
 
         test('D, E and A', function() {
-          const union = hierarchy.getNearestCommonParents(
-              'typeD', 'typeE', 'typeA');
-          chai.assert.deepEqual(union, ['typea']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeD', 'typeE', 'typeA'], ['typeA']);
         });
 
         test('D, E, F and B', function() {
-          const union = hierarchy.getNearestCommonParents(
-              'typeD', 'typeE', 'typeF', 'typeB');
-          chai.assert.deepEqual(union, ['typeb']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeD', 'typeE', 'typeF', 'typeB'], ['typeB']);
         });
 
         test('D, E and C', function() {
-          const union = hierarchy.getNearestCommonParents(
-              'typeD', 'typeE', 'typeC');
-          chai.assert.isArray(union);
-          chai.assert.isEmpty(union);
+          this.assertNoNearestCommonParents(
+              hierarchy, ['typeD', 'typeE', 'typeC']);
         });
       });
 
@@ -2787,14 +2787,13 @@ suite('TypeHierarchy', function() {
         });
 
         test('G and H', function() {
-          const union = hierarchy.getNearestCommonParents('typeG', 'typeH');
-          chai.assert.deepEqual(union, ['typed', 'typee']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeG', 'typeH'], ['typeD', 'typeE']);
         });
 
         test('G, H and F', function() {
-          const union = hierarchy.getNearestCommonParents(
-              'typeG', 'typeH', 'typeF');
-          chai.assert.deepEqual(union, ['typeb', 'typec']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeG', 'typeH', 'typeF'], ['typeC', 'typeB']);
         });
       });
 
@@ -2834,20 +2833,20 @@ suite('TypeHierarchy', function() {
         });
 
         test('L and M', function() {
-          const union = hierarchy.getNearestCommonParents('typeL', 'typeM');
-          chai.assert.deepEqual(union, ['typei', 'typej']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeL', 'typeM'], ['typeI', 'typeJ']);
         });
 
         test('L, M and K', function() {
-          const union = hierarchy.getNearestCommonParents(
-              'typeL', 'typeM', 'typeK');
-          chai.assert.deepEqual(union, ['typef', 'typeg']);
+          this.assertNearestCommonParents(
+              hierarchy, ['typeL', 'typeM', 'typeK'], ['typeG', 'typeF']);
         });
 
         test('L, M, K and H', function() {
-          const union = hierarchy.getNearestCommonParents(
-              'typeL', 'typeM', 'typeK', 'typeH');
-          chai.assert.deepEqual(union, ['typec', 'typed']);
+          this.assertNearestCommonParents(
+              hierarchy,
+              ['typeL', 'typeM', 'typeK', 'typeH'],
+              ['typeC', 'typeD']);
         });
       });
     });
