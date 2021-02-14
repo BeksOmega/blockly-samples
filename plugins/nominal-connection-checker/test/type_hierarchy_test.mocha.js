@@ -2374,7 +2374,7 @@ suite('TypeHierarchy', function() {
     });
   });
 
-  suite.only('nearestCommonParents', function() {
+  suite('nearestCommonParents', function() {
     setup(function() {
       this.assertNearestCommonParents = function(hierarchy, toUnify, expected) {
         const actual = hierarchy.getNearestCommonParents(

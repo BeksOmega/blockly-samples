@@ -11,7 +11,7 @@
 
 import * as Blockly from 'blockly/core';
 import {TypeHierarchy} from './type_hierarchy';
-import {parseType, TypeStructure} from './type_structure';
+import {parseType, structureToString, TypeStructure} from './type_structure';
 import {getCheck, isExplicitConnection, isGenericConnection} from './utils';
 
 
@@ -85,14 +85,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
         this.typeIsOnlyBoundByParams_(parentSource, parentCheck)) {
       return childTypes.some((childType) => {
         return parentTypes.some((parentType) => {
-          // TODO: clean this up.
-          return typeHierarchy
-              .getNearestCommonParents(
-                childType instanceof TypeStructure ?
-                    childType: parseType(childType),
-                parentType instanceof TypeStructure ?
-                    parentType: parseType(parentType)
-              ).length;
+          return typeHierarchy.getNearestCommonParents(
+              parseType(childType), parseType(parentType)).length;
         });
       });
     }
@@ -100,12 +94,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     return childTypes.some((childType) => {
       return parentTypes.some((parentType) => {
         return typeHierarchy.typeFulfillsType(
-            // TODO: clean this up.
-            childType instanceof TypeStructure ?
-                childType: parseType(childType),
-            parentType instanceof TypeStructure ?
-                parentType: parseType(parentType)
-        );
+            parseType(childType), parseType(parentType));
       });
     });
   }
@@ -289,8 +278,9 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
         block.nextConnection, genericType, connectionToSkip));
 
     if (types.length) {
-      return this.getTypeHierarchy_().getNearestCommonParents(
-          ...types.map(((type) => parseType(type))));
+      return this.getTypeHierarchy_()
+          .getNearestCommonParents(...types.map(((type) => parseType(type))))
+          .map((typeStruct) => structureToString(typeStruct));
     }
     return [];
   }
