@@ -2850,5 +2850,788 @@ suite('TypeHierarchy', function() {
         });
       });
     });
+
+    suite('Params', function() {
+      /*
+       * In the context of this suite, "outer" refers to the parameterized type,
+       * and "params" refers to the type parameters.
+       */
+
+      suite('Single common parents', function() {
+        test('Unify self', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': { },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              ['typeA[typeB, typeA[typeB, typeB]]'],
+              ['typeA[typeB, typeA[typeB, typeB]]']);
+        });
+
+        test('Outer unify sibling', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'fulfills': ['typeA[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': {
+              'fulfills': ['typeA[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeD': { },
+          });
+          this.assertNearestCommonParents(
+              hierarchy, ['typeB[typeD]', 'typeC[typeD]'], ['typeA[typeD]']);
+        });
+
+        test('Params unify sibling', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': { },
+            'typeC': {
+              'fulfills': ['typeB'],
+            },
+            'typeD': {
+              'fulfills': ['typeB'],
+            },
+          });
+          this.assertNearestCommonParents(
+              hierarchy, ['typeA[typeC]', 'typeA[typeD]'], ['typeA[typeB]']);
+        });
+
+        test('Outer and params unify sibling', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'fulfills': ['typeA[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': {
+              'fulfills': ['typeA[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeD': { },
+            'typeE': {
+              'fulfills': ['typeD'],
+            },
+            'typeF': {
+              'fulfills': ['typeD'],
+            },
+          });
+          this.assertNearestCommonParents(
+              hierarchy, ['typeB[typeE]', 'typeC[typeF]'], ['typeA[typeD]']);
+        });
+
+        test('Multiple params', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': { },
+            'typeC': { },
+            'typeD': {
+              'fulfills': ['typeB'],
+            },
+            'typeE': {
+              'fulfills': ['typeB'],
+            },
+            'typeF': {
+              'fulfills': ['typeC'],
+            },
+            'typeG': {
+              'fulfills': ['typeC'],
+            },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              ['typeA[typeD, typeF]', 'typeA[typeE, typeG]'],
+              ['typeA[typeB, typeC]']);
+        });
+
+        test('Nested params', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'fulfills': ['typeA[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': {
+              'fulfills': ['typeA[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeD': { },
+            'typeE': {
+              'fulfills': ['typeD'],
+            },
+            'typeF': {
+              'fulfills': ['typeD'],
+            },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              ['typeB[typeC[typeE]]', 'typeC[typeB[typeF]]'],
+              ['typeA[typeA[typeD]]']);
+        });
+
+        suite('Mixed up params', function() {
+          setup(function() {
+            this.hierarchy = new TypeHierarchy({
+              'typeA': {
+                'params': [
+                  {
+                    'name': 'A',
+                    'variance': 'inv',
+                  },
+                  {
+                    'name': 'B',
+                    'variance': 'inv',
+                  },
+                ],
+              },
+              'typeB': {
+                'fulfills': ['typeA[B, A]'],
+                'params': [
+                  {
+                    'name': 'A',
+                    'variance': 'inv',
+                  },
+                  {
+                    'name': 'B',
+                    'variance': 'inv',
+                  },
+                ]
+              },
+              'typeC': {
+                'fulfills': ['typeA[B, A]'],
+                'params': [
+                  {
+                    'name': 'A',
+                    'variance': 'inv',
+                  },
+                  {
+                    'name': 'B',
+                    'variance': 'inv',
+                  },
+                ],
+              },
+              'typeD': { },
+              'typeE': { },
+              'typeF': {
+                'fulfills': ['typeD'],
+              },
+              'typeG': {
+                'fulfills': ['typeD'],
+              },
+              'typeH': {
+                'fulfills': ['typeE'],
+              },
+              'typeI': {
+                'fulfills': ['typeE'],
+              },
+            });
+          });
+
+          test('Params unify self', function() {
+            this.assertNearestCommonParents(
+                this.hierarchy,
+                ['typeB[typeF, typeG]', 'typeC[typeF, typeG]'],
+                ['typeA[typeG, typeF]'], // Observe how types reversed.
+            );
+          });
+
+          test('Unify sibling', function() {
+            this.assertNearestCommonParents(
+                this.hierarchy,
+                ['typeB[typeF, typeH]', 'typeC[typeG, typeI]'],
+                ['typeA[typeE, typeD]'], // Observe how types reversed.
+            );
+          });
+        });
+      });
+
+      suite('Multiple common parents - outer', function() {
+        test('Single param', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': {
+              'fulfills': ['typeA[A]', 'typeB[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeD': {
+              'fulfills': ['typeA[A]', 'typeB[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeE': { },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              ['typeC[typeE]', 'typeD[typeE]'],
+              ['typeA[typeE]', 'typeB[typeE]']);
+        });
+
+        test('Multiple params', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': {
+              'fulfills': ['typeA[A, B]', 'typeB[A, B]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeD': {
+              'fulfills': ['typeA[A, B]', 'typeB[A, B]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeE': { },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              ['typeC[typeE, typeE]', 'typeD[typeE, typeE]'],
+              ['typeA[typeE, typeE]', 'typeB[typeE, typeE]']);
+        });
+
+        test('Nested params', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': {
+              'fulfills': ['typeA[A]', 'typeB[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeD': {
+              'fulfills': ['typeA[A]', 'typeB[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeE': { },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              ['typeC[typeC[typeE]]', 'typeD[typeD[typeE]]'],
+              [
+                'typeA[typeA[typeE]]',
+                'typeA[typeB[typeE]]',
+                'typeB[typeA[typeE]]',
+                'typeB[typeB[typeE]]',
+              ]
+          );
+        });
+      });
+
+      suite('Multiple common parents - params', function() {
+        test('Single param', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': { },
+            'typeC': { },
+            'typeD': {
+              'fulfills': ['typeB', 'typeC'],
+            },
+            'typeE': {
+              'fulfills': ['typeB', 'typeC'],
+            },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              ['typeA[typeD]', 'typeA[typeE]'],
+              ['typeA[typeB]', 'typeA[typeC]']);
+        });
+
+        test('Multiple params', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': { },
+            'typeC': { },
+            'typeD': {
+              'fulfills': ['typeB', 'typeC'],
+            },
+            'typeE': {
+              'fulfills': ['typeB', 'typeC'],
+            },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              ['typeA[typeD, typeD]', 'typeA[typeE, typeE]'],
+              [
+                'typeA[typeB, typeB]',
+                'typeA[typeB, typeC]',
+                'typeA[typeC, typeB]',
+                'typeA[typeC, typeC]',
+              ]
+          );
+        });
+
+        test('Nested multiple params', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': { },
+            'typeC': { },
+            'typeD': {
+              'fulfills': ['typeB', 'typeC'],
+            },
+            'typeE': {
+              'fulfills': ['typeB', 'typeC'],
+            },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              [
+                'typeA[typeD, typeA[typeD, typeD]]',
+                'typeA[typeE, typeA[typeE, typeE]]',
+              ],
+              [
+                'typeA[typeB, typeA[typeB, typeB]]',
+                'typeA[typeB, typeA[typeB, typeC]]',
+                'typeA[typeB, typeA[typeC, typeB]]',
+                'typeA[typeB, typeA[typeC, typeC]]',
+                'typeA[typeC, typeA[typeB, typeB]]',
+                'typeA[typeC, typeA[typeB, typeC]]',
+                'typeA[typeC, typeA[typeC, typeB]]',
+                'typeA[typeC, typeA[typeC, typeC]]',
+              ]
+          );
+        });
+      });
+
+      suite('Multiple common parents - outer and params', function() {
+        test('Single param', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': {
+              'fulfills': ['typeA[A]', 'typeB[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeD': {
+              'fulfills': ['typeA[A]', 'typeB[A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeE': { },
+            'typeF': { },
+            'typeG': {
+              'fulfills': ['typeE', 'typeF'],
+            },
+            'typeH': {
+              'fulfills': ['typeE', 'typeF'],
+            },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              ['typeC[typeG]', 'typeD[typeH]'],
+              [
+                'typeA[typeE]',
+                'typeA[typeF]',
+                'typeB[typeE]',
+                'typeB[typeF]',
+              ]
+          );
+        });
+
+        test('Multiple params', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': {
+              'fulfills': ['typeA[A, B]', 'typeB[A, B]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeD': {
+              'fulfills': ['typeA[A, B]', 'typeB[A, B]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeE': { },
+            'typeF': { },
+            'typeG': {
+              'fulfills': ['typeE', 'typeF'],
+            },
+            'typeH': {
+              'fulfills': ['typeE', 'typeF'],
+            },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              ['typeC[typeG, typeG]', 'typeD[typeH, typeH]'],
+              [
+                'typeA[typeE, typeE]',
+                'typeA[typeE, typeF]',
+                'typeA[typeF, typeE]',
+                'typeA[typeF, typeF]',
+                'typeB[typeE, typeE]',
+                'typeB[typeE, typeF]',
+                'typeB[typeF, typeE]',
+                'typeB[typeF, typeF]',
+              ]
+          );
+        });
+
+        test('Nested params', function() {
+          const hierarchy = new TypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': {
+              'fulfills': ['typeA[A, B]', 'typeB[A, B]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeD': {
+              'fulfills': ['typeA[A, B]', 'typeB[A, B]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeE': { },
+            'typeF': { },
+            'typeG': {
+              'fulfills': ['typeE', 'typeF'],
+            },
+            'typeH': {
+              'fulfills': ['typeE', 'typeF'],
+            },
+          });
+          this.assertNearestCommonParents(
+              hierarchy,
+              [
+                'typeC[typeG, typeC[typeG, typeG]]',
+                'typeD[typeH, typeD[typeH, typeH]]',
+              ],
+              [
+                'typeA[typeE, typeA[typeE, typeE]]',
+                'typeA[typeE, typeA[typeE, typeF]]',
+                'typeA[typeE, typeA[typeF, typeE]]',
+                'typeA[typeE, typeA[typeF, typeF]]',
+                'typeA[typeE, typeB[typeE, typeE]]',
+                'typeA[typeE, typeB[typeE, typeF]]',
+                'typeA[typeE, typeB[typeF, typeE]]',
+                'typeA[typeE, typeB[typeF, typeF]]',
+                'typeA[typeF, typeA[typeE, typeE]]',
+                'typeA[typeF, typeA[typeE, typeF]]',
+                'typeA[typeF, typeA[typeF, typeE]]',
+                'typeA[typeF, typeA[typeF, typeF]]',
+                'typeA[typeF, typeB[typeE, typeE]]',
+                'typeA[typeF, typeB[typeE, typeF]]',
+                'typeA[typeF, typeB[typeF, typeE]]',
+                'typeA[typeF, typeB[typeF, typeF]]',
+                'typeB[typeE, typeA[typeE, typeE]]',
+                'typeB[typeE, typeA[typeE, typeF]]',
+                'typeB[typeE, typeA[typeF, typeE]]',
+                'typeB[typeE, typeA[typeF, typeF]]',
+                'typeB[typeE, typeB[typeE, typeE]]',
+                'typeB[typeE, typeB[typeE, typeF]]',
+                'typeB[typeE, typeB[typeF, typeE]]',
+                'typeB[typeE, typeB[typeF, typeF]]',
+                'typeB[typeF, typeA[typeE, typeE]]',
+                'typeB[typeF, typeA[typeE, typeF]]',
+                'typeB[typeF, typeA[typeF, typeE]]',
+                'typeB[typeF, typeA[typeF, typeF]]',
+                'typeB[typeF, typeB[typeE, typeE]]',
+                'typeB[typeF, typeB[typeE, typeF]]',
+                'typeB[typeF, typeB[typeF, typeE]]',
+                'typeB[typeF, typeB[typeF, typeF]]',
+              ]
+          );
+        });
+      });
+
+      suite('Explicit parameter inheritance', function() {
+
+      });
+    });
   });
 });
