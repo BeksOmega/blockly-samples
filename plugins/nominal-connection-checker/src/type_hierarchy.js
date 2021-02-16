@@ -11,6 +11,7 @@
 'use strict';
 
 import {TypeStructure, parseType, structureToString} from './type_structure';
+import {isGeneric} from './utils';
 
 
 /**
@@ -450,8 +451,12 @@ class TypeDef {
     const thisToSuper = this.getParamsForAncestor(superType.name);
     const thisToAncestor = [];
     superToAncestor.forEach((typeStruct) => {
-      thisToAncestor.push(
-          thisToSuper[superType.getIndexOfParam(typeStruct.name)]);
+      if (isGeneric(typeStruct.name)) {
+        thisToAncestor.push(
+            thisToSuper[superType.getIndexOfParam(typeStruct.name)]);
+      } else {
+        thisToAncestor.push(typeStruct);
+      }
     });
     this.paramsMap_.set(ancestorName, thisToAncestor);
   }
