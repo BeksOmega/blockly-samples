@@ -32,20 +32,34 @@ export class TypeHierarchy {
     this.types_ = new Map();
 
     /**
-     * Map of type names to maps of type names to sets of type names that are
-     * the nearest common parents of the two types. You can think of it like
+     * Map of type names to maps of type names to arrays of type names that are
+     * the nearest common ancestors of the two types. You can think of it like
      * a two-dimensional array where both axes contain all of the type names.
      *
-     * A nearest common parent of two types u and v is defined as:
+     * A nearest common ancestor of two types u and v is defined as:
      * A super type of both u and v that has no descendant which is also an
      * ancestor of both u and v.
      * @type {!Map<string, !Map<string, Array<string>>>}
      * @private
      */
-    this.nearestCommonParents_ = new Map();
+    this.nearestCommonAncestors_ = new Map();
+
+    /**
+     * Map of type names to maps of type names to arrays of type names that are
+     * the nearest common descendants of the two types. You can think of it like
+     * a two-dimensional array where both axes contain all of the type names.
+     *
+     * A nearest common descendant of two types u and v is defined as:
+     * A sub type of both U and v that has no ancestor which is also a
+     * descendant of both u and v.
+     * @type {!Map<string, !Map<string, Array<string>>>}
+     * @private
+     */
+    this.nearestCommonDescendants_ = new Map();
 
     this.initTypes_(hierarchyDef);
-    this.initNearestCommonParents_();
+    this.initNearestCommonAncestors_();
+    this.initNearestCommonDescendants_();
   }
 
   /**
@@ -125,8 +139,32 @@ export class TypeHierarchy {
   }
 
   /**
-   * Initializes the nearestCommonParents_ graph so the least common ancestors
-   * of two types can be accessed in constant time.
+   * Initializes the nearestCommonAncestors_ graph so the nearest common
+   * ancestors of two types can be accessed in constant time.
+   * @private
+   */
+  initNearestCommonAncestors_() {
+    this.initNearest_(
+        this.nearestCommonAncestors_,
+        (type) => type.supers(),
+        (type, otherTypeName) => type.hasDescendant(otherTypeName));
+  }
+
+  /**
+   * Initializes the nearestCommonDesendants_ graph so that the nearest common
+   * descendants of two types can be accessed in constant time.
+   * @private
+   */
+  initNearestCommonDescendants_() {
+    this.initNearest_(
+        this.nearestCommonDescendants_,
+        (type) => type.subs(),
+        (type, otherTypeName) => type.hasDescendant(otherTypeName));
+  }
+
+  /**
+   * Initializes the given nearestCommonMap so that the nearest common
+   * ancestors/descendants of two types can be accessed in constant type.
    *
    * Implements the pre-processing algorithm defined in:
    * Czumaj, Artur, Miroslaw Kowaluk and and Andrzej Lingas. "Faster algorithms
@@ -134,38 +172,51 @@ export class TypeHierarchy {
    * Theoretical Computer Science, 380.1-2 (2007): 37-46.
    * https://bit.ly/2SrCRs5
    *
+   * But the above has been slightly modified to work for both ancestors and
+   * descendants.
+   *
    * Operates in O(nm) where n is the number of nodes and m is the number of
    * edges.
+   *
+   * @param {!Map<string, !Map<string, Array<string>>>} nearestCommonMap The
+   *      map of nearest common types (either ancestors or descendants) that we
+   *     are initializing.
+   * @param {function(TypeDef):!Array<string>} relevantRelatives Returns the
+   *     relatives that are relevant to this procedure. In the case of ancestors,
+   *     returns supertypes, and in the case of descendants, returns subtypes.
+   * @param {function(TypeDef, string):boolean} isNearest Returns true if the
+   *     type associated with the string name is the nearest common X of the
+   *     type associated with the string name and the given type def.
    * @private
    */
-  initNearestCommonParents_() {
+  initNearest_(nearestCommonMap, relevantRelatives, isNearest) {
     const unvisitedTypes = new Set(this.types_.keys());
     while (unvisitedTypes.size) {
       for (const typeName of unvisitedTypes) {
         const type = this.types_.get(typeName);
-        const unvisitedSupers = type.supers().filter(
-            unvisitedTypes.has, unvisitedTypes);
-        if (unvisitedSupers.length) {
+        const hasUnvisited = !!relevantRelatives(type).filter(
+            unvisitedTypes.has, unvisitedTypes).length;
+        if (hasUnvisited) {
           continue;
         }
         unvisitedTypes.delete(typeName);
 
         const map = new Map();
-        this.nearestCommonParents_.set(typeName, map);
+        nearestCommonMap.set(typeName, map);
         for (const [otherTypeName] of this.types_) {
-          let leastCommonAncestors = [];
-          if (type.hasDescendant(otherTypeName)) {
-            leastCommonAncestors.push(typeName);
+          let nearestCommon = [];
+          if (isNearest(type, otherTypeName)) {
+            nearestCommon.push(typeName);
           } else {
-            // Get all the least common ancestors this type's direct
-            // ancestors have with the otherType.
-            type.supers().forEach((superTypeName) => {
-              leastCommonAncestors.push(
-                  ...this.nearestCommonParents_.get(superTypeName)
+            // Get all the nearest common types this type's relevant relatives
+            // have with the otherType.
+            relevantRelatives(type).forEach((relTypeName) => {
+              nearestCommon.push(
+                  ...nearestCommonMap.get(relTypeName)
                       .get(otherTypeName));
             });
-            // Only include types that have no descendants in the array.
-            leastCommonAncestors = leastCommonAncestors.filter(
+            // Remove types that have a nearer relative in the array.
+            nearestCommon = nearestCommon.filter(
                 (typeName, i, array) => {
                   return !array.some((otherTypeName) => {
                     // Don't match the type against itself, but do match against
@@ -173,12 +224,11 @@ export class TypeHierarchy {
                     if (array.indexOf(otherTypeName) == i) {
                       return false;
                     }
-                    return this.types_.get(typeName)
-                        .hasDescendant(otherTypeName);
+                    return isNearest(this.types_.get(typeName), otherTypeName);
                   });
                 });
           }
-          map.set(otherTypeName, leastCommonAncestors);
+          map.set(otherTypeName, nearestCommon);
         }
       }
     }
@@ -269,7 +319,7 @@ export class TypeHierarchy {
       // Get the common parents for the "outer" type.
       const commonParents = typeStructs.reduce((accumulator, currType) => {
         const nearestCommonParentsMap =
-            this.nearestCommonParents_.get(currType.name);
+            this.nearestCommonAncestors_.get(currType.name);
         return accumulator
             .flatMap((type) => {
               return nearestCommonParentsMap.get(type.name).map((parentName) =>

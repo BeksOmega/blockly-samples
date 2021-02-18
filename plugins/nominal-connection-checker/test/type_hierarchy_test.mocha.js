@@ -2427,7 +2427,7 @@ suite('TypeHierarchy', function() {
     });
   });
 
-  suite('nearestCommonParents', function() {
+  suite.only('nearestCommonParents', function() {
     setup(function() {
       this.assertNearestCommonParents = function(hierarchy, toUnify, expected) {
         const actual = hierarchy.getNearestCommonParents(
@@ -2907,7 +2907,7 @@ suite('TypeHierarchy', function() {
       });
     });
 
-    suite('Params', function() {
+    suite.skip('Params', function() {
       /*
        * In the context of this suite, "outer" refers to the parameterized type,
        * and "params" refers to the type parameters.
