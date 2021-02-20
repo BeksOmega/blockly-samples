@@ -309,119 +309,156 @@ export class TypeHierarchy {
    * ancestor of all types in A.
    * @param {...TypeStructure} types A variable number of types that we want to
    *     find the nearest common ancestors of.
-   * @return {!Array<TypeStructure>} An array of all the nearest common
+   * @return {!Array<!TypeStructure>} An array of all the nearest common
    *     ancestors of the given types.
    */
   getNearestCommonParents(...types) {
-    if (!types.length) {
-      return [];
-    }
-
-    const getNearestCommonParentsRec = (typeStructs) => {
-      // Get the common parents for the "outer" type.
-      const commonParents = typeStructs.reduce((accumulator, currType) => {
-        const nearestCommonParentsMap =
-            this.nearestCommonAncestors_.get(currType.name);
-        return accumulator
-            .flatMap((type) => {
-              return nearestCommonParentsMap.get(type.name).map((parentName) =>
-                new TypeStructure(parentName));
-            })
-            // Get rid of duplicates.
-            .filter((type, i, array) => {
-              return array.every((type2, i2) => {
-                return i <= i2 || !type.equals(type2);
-              });
-            });
-      }, [typeStructs[0]]);
-
-      // Create type structures for each combination of nearest common parents
-      // of the parameter types.
-      return commonParents.flatMap((parent) => {
-        // An array of arrays, where each subarray is a list of actual types
-        // we need to unify for a given parameter of the parent.
-        let paramsLists = [];
-        typeStructs.forEach((typeStruct) => {
-          const mappedParams = this.types_.get(typeStruct.name)
-              .getParamsForAncestor(parent.name, typeStruct.params);
-          mappedParams.forEach((param, i) => {
-            if (!paramsLists[i]) {
-              paramsLists[i] = [];
-            }
-            paramsLists[i].push(param);
-          });
-        });
-
-        if (!paramsLists.length) {
-          return [parent];
-        }
-
-        // Change the paramsLists to an array of arrays of *nearest common
-        // parents* of the types that are currently in the paramsLists.
-        paramsLists = paramsLists.map(
-            (paramList) => getNearestCommonParentsRec(paramList));
-
-        const combine = ([firstArray, ...[secondArray, ...rest]]) => {
-          if (!secondArray) {
-            return firstArray;
-          }
-          const combined = firstArray.flatMap((a) =>
-            secondArray.map((b) => [].concat(a, b)));
-          return combine([combined, ...rest]);
-        };
-
-
-        // Create all the combinations of parameters (nearestCommonParents
-        // should not allow for duplicates).
-        paramsLists[0] = paramsLists[0].map((val) => [val]);
-        const combinations = combine(paramsLists);
-
-        // Turn parameter combinations into versions of the parent
-        // types structure.
-        return combinations.map((combo) => {
-          const struct = new TypeStructure(parent.name);
-          struct.params = combo;
-          return struct;
-        });
-      });
-    };
-
-    return getNearestCommonParentsRec(types);
+    return this.getNearestCommon_(
+        this.nearestCommonAncestors_,
+        (typeDef, ancestorName, actualParams) =>
+          typeDef.getParamsForAncestor(ancestorName, actualParams),
+        this.getNearestCommonParents.bind(this),
+        this.getNearestCommonDescendants.bind(this),
+        ...types);
   }
 
   /**
    * Returns an array of all the nearest common descendants of the given types.
-   * A nearest common ancestor of a set of types A is defined as:
+   * A nearest common descendant of a set of types A is defined as:
    * A subtype of all types in A that has no ancestor which is also a descendant
    * of all types in A.
    * @param {...TypeStructure} types A variable number of types that we want to
    *     find the nearest common descendants of.
-   * @return {!Array<TypeStructure>} An array of all the nearest common
+   * @return {!Array<!TypeStructure>} An array of all the nearest common
    *     descendants of the given types.
    */
   getNearestCommonDescendants(...types) {
+    return this.getNearestCommon_(
+        this.nearestCommonDescendants_,
+        (typeDef, descendantName, actualParams) =>
+          typeDef.getParamsForDescendant(descendantName, actualParams),
+        this.getNearestCommonDescendants.bind(this),
+        this.getNearestCommonParents.bind(this),
+        ...types);
+  }
+
+  /**
+   * Returns the nearest common types of the given types, based on the other
+   * passed parameters.
+   * @param {!Map<string, !Map<string, !Array<string>>>} nearestCommonMap Map
+   *     that defines the array of nearest common types of any two types.
+   * @param {function(!TypeDef, string, !Array<!TypeStructure>)}
+   *     getParamsForNearestCommon Function that returns the params of the given
+   *     typeDef mapped to the params of the type with the string name. Generic
+   *     types of the typeDef should be replaced with the actual types defined
+   *     by the array of TypeStructures.
+   * @param {function(...TypeStructure)} covariantRecursion Returns an array of
+   *     unified parameter types for the case that the parameter is defined as
+   *     covariant.
+   * @param {function(...TypeStructure)} contravariantRecursion Returns an array
+   *     of unified parameter types for the case that the parameter is defined
+   *     as contravariant.
+   * @param {...TypeStructure} types The types to find the nearest common
+   *     types of.
+   * @return {!Array<!TypeStructure>} An array of all of the nearest common
+   *     types of the given types.
+   * @private
+   */
+  getNearestCommon_(
+      nearestCommonMap,
+      getParamsForNearestCommon,
+      covariantRecursion,
+      contravariantRecursion,
+      ...types
+  ) {
     if (!types.length) {
       return [];
     }
-    return types.reduce((accumulator, currType) => {
-      const nearestCommonDecendantsMap =
-          // TODO: Nearest map?
-          this.nearestCommonDescendants_.get(currType.name);
+
+    // Get the nearest common types for the "outer" types.
+    const commonTypes = types.reduce((accumulator, currType) => {
+      const commonMap = nearestCommonMap.get(currType.name);
+      // Note: neither flatMap() nor flat() work on Node 10. See #431.
       return accumulator
           .map((type) => {
-            // TODO: Nearest map?
-            return nearestCommonDecendantsMap.get(type.name).map((parentName) =>
-              new TypeStructure(parentName));
+            return commonMap.get(type.name).map(
+                (commonName) => new TypeStructure(commonName));
           })
           .reduce((flat, toFlatten) => {
             return [...flat, ...toFlatten];
           }, [])
+          // Get rid of duplicates.
           .filter((type, i, array) => {
             return array.every((type2, i2) => {
               return i <= i2 || !type.equals(type2);
             });
           });
     }, [types[0]]);
+
+    return commonTypes
+        .map((commonType) => {
+          // An array of arrays, where each subarray is a list of actual types
+          // we need to unify for a given parameter of the commonType.
+          let paramsLists = [];
+          types.forEach((typeStruct) => {
+            const mappedParams = getParamsForNearestCommon(
+                this.types_.get(typeStruct.name),
+                commonType.name,
+                typeStruct.params);
+            mappedParams.forEach((param, i) => {
+              // TODO: This may not work if they all evaluate to null!
+              if (!param) {
+                // Just ignore nulls, we don't have type info for these params.
+                return;
+              }
+              if (!paramsLists[i]) {
+                paramsLists[i] = [];
+              }
+              paramsLists[i].push(param);
+            });
+          });
+
+          if (!paramsLists.length) {
+            return [commonType];
+          }
+
+          // Change the paramsLists to an array of arrays of *unified types*
+          // of the types that are currently in the paramsLists.
+          const commonDef = this.types_.get(commonType.name);
+          paramsLists = paramsLists.map((paramList, i) => {
+            switch (commonDef.getParamForIndex(i).variance) {
+              case Variance.CO:
+                return covariantRecursion(...paramList);
+              case Variance.CONTRA:
+                return contravariantRecursion(...paramList);
+              case Variance.INV:
+                // eslint-disable-next-line no-case-declarations
+                const [first, ...rest] = paramList;
+                if (rest.every((typeStruct) => typeStruct.equals(first))) {
+                  return first;
+                }
+                return []; // Empty array means the types do not unify.
+            }
+          });
+
+          // Create all the combinations of parameters (unification should not
+          // allow for duplicates).
+          // If any of the types didn't unify above (ie evaluated to []) the
+          // combine call will evaluate to [].
+          paramsLists[0] = paramsLists[0].map((val) => [val]);
+          const combinations = this.combine_(paramsLists);
+
+          // Turn parameter combinations into versions of the
+          // commonType's structure.
+          return combinations.map((combo) => {
+            const struct = new TypeStructure(commonType.name);
+            struct.params = combo;
+            return struct;
+          });
+        })
+        .reduce((flat, toFlatten) => {
+          return [...flat, ...toFlatten];
+        }, []);
   }
 
   /**
@@ -441,6 +478,15 @@ export class TypeHierarchy {
       throw new ActualParamsCountError(
           struct.name, struct.params.length, def.params().length);
     }
+  }
+
+  combine_([firstArray, ...[secondArray, ...rest]]) {
+    if (!secondArray) {
+      return firstArray;
+    }
+    const combined = firstArray.flatMap((a) =>
+      secondArray.map((b) => [].concat(a, b)));
+    return this.combine_([combined, ...rest]);
   }
 }
 
@@ -534,7 +580,7 @@ class TypeDef {
     const subToThis = subDef.getParamsForAncestor(this.name);
     const thisToSub = subDef.params().map((param) => {
       const index = subToThis.findIndex((typeStruct) =>
-        typeStruct.name == param.name);
+          typeStruct.name == param.name);
       if (index == -1) {
         return null;
       }
