@@ -778,10 +778,10 @@ class TypeDef {
             return new TypeStructure(param.name);
           }));
     }
-    if (!paramsMap.has(typeName)) {
-      console.trace('skipping', typeName);
-      return [];
-    }
+    // if (!paramsMap.has(typeName)) {
+    //   console.trace('skipping', typeName);
+    //   return [];
+    // }
 
     // Deep copy structure so that we don't have to worry about corruption.
     const params = paramsMap.get(typeName)
