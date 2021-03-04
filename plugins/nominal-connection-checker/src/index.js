@@ -11,9 +11,9 @@
 
 import * as Blockly from 'blockly/core';
 import {TypeHierarchy} from './type_hierarchy';
-import {getCheck, isExplicitConnection} from './utils';
+import {parseType, structureToString, TypeStructure} from './type_structure';
+import {getCheck, isExplicitConnection, isGenericConnection} from './utils';
 
-// TODO: Fix the version of Blockly being required in package.json.
 
 /**
  * A connection checker that is targeted at helping Blockly model languages with
@@ -75,9 +75,26 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
       // At least one is an unbound generic.
       return true;
     }
+
+    // If the parent is only bound by parameters, allow the child block to
+    // connect if any of its types share a common ancestor with any of the
+    // parent types.
+    const parentSource = parent.getSourceBlock();
+    const parentCheck = getCheck(parent);
+    if (isGenericConnection(parent) &&
+        this.typeIsOnlyBoundByParams_(parentSource, parentCheck)) {
+      return childTypes.some((childType) => {
+        return parentTypes.some((parentType) => {
+          return typeHierarchy.getNearestCommonParents(
+              parseType(childType), parseType(parentType)).length;
+        });
+      });
+    }
+
     return childTypes.some((childType) => {
       return parentTypes.some((parentType) => {
-        return typeHierarchy.typeFulfillsType(childType, parentType);
+        return typeHierarchy.typeFulfillsType(
+            parseType(childType), parseType(parentType));
       });
     });
   }
@@ -261,7 +278,9 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
         block.nextConnection, genericType, connectionToSkip));
 
     if (types.length) {
-      return this.getTypeHierarchy_().getNearestCommonParents(...types);
+      return this.getTypeHierarchy_()
+          .getNearestCommonParents(...types.map((type) => parseType(type)))
+          .map((typeStruct) => structureToString(typeStruct));
     }
     return [];
   }
@@ -292,7 +311,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    * @param {!Blockly.Connection} connection The connection to get the bound
    *     type of.
    * @param {string} genericType The generic type to find the bound type of.
-   * @param {!Blockly.Connection} connectionToSkip The connection to skip. If
+   * @param {!Blockly.Connection=} connectionToSkip The connection to skip. If
    *     the connection matches this connection, it will be ignored.
    * @return {!Array<string>} The bound type(s) associated with the passed
    *     connection.
@@ -313,6 +332,26 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     }
     return this.getBoundTypes_(
         target.getSourceBlock(), check, target);
+  }
+
+  /**
+   * Returns true if the given block generic type pair is only bound by input
+   * next connections. Returns false if it is bound by an explicit binding, or
+   * connections to the output or previous connections.
+   * @param {!Blockly.Block} block The block that provides the context for the
+   *     generic type.
+   * @param {string} genericType The generic type that we want to check the
+   *     state of.
+   * @return {boolean} True if the type is only bound by inputs, false
+   *     otherwise.
+   * @private
+   */
+  typeIsOnlyBoundByParams_(block, genericType) {
+    const typeisBoundByOther =
+        this.getExternalBinding_(block, genericType) ||
+        this.getConnectionTypes_(block.outputConnection, genericType).length ||
+        this.getConnectionTypes_(block.previousConnection, genericType).length;
+    return !typeisBoundByOther;
   }
 }
 

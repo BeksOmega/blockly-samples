@@ -8,6 +8,9 @@
  * @fileoverview Helpers for tests of the NominalConnectionChecker.
  */
 
+
+const Blockly = require('blockly/node');
+
 /**
  * Returns an array of JSON block definitions based on the given types. This
  * creates nine blocks for each type, each representing a different
@@ -17,7 +20,7 @@
  */
 export function createBlockDefs(types) {
   const blocks = [];
-  for (const type of types) {
+  for (let type of types) {
     blocks.push({
       'type': 'static_' + type + '_outer_value',
       'message0': '%1',
@@ -28,6 +31,7 @@ export function createBlockDefs(types) {
           'check': [type],
         },
       ],
+      'mutator': 'bind_type_mutator',
     });
     blocks.push({
       'type': 'static_' + type + '_outer_statement',
@@ -39,22 +43,26 @@ export function createBlockDefs(types) {
           'check': [type],
         },
       ],
+      'mutator': 'bind_type_mutator',
     });
     blocks.push({
       'type': 'static_' + type + '_outer_next',
       'message0': '',
       'nextStatement': [type],
+      'mutator': 'bind_type_mutator',
     });
 
     blocks.push({
       'type': 'static_' + type + '_inner_out',
       'message0': '',
       'output': [type],
+      'mutator': 'bind_type_mutator',
     });
     blocks.push({
       'type': 'static_' + type + '_inner_prev',
       'message0': '',
       'previousStatement': [type],
+      'mutator': 'bind_type_mutator',
     });
 
     blocks.push({
@@ -78,6 +86,7 @@ export function createBlockDefs(types) {
         },
       ],
       'output': [type],
+      'mutator': 'bind_type_mutator',
     });
     blocks.push({
       'type': 'static_' + type + '_main_out_statement',
@@ -100,12 +109,14 @@ export function createBlockDefs(types) {
         },
       ],
       'output': [type],
+      'mutator': 'bind_type_mutator',
     });
     blocks.push({
       'type': 'static_' + type + '_main_out_next',
       'message0': '',
       'output': [type],
       'nextStatement': [type],
+      'mutator': 'bind_type_mutator',
     });
     blocks.push({
       'type': 'static_' + type + '_main_prev_value',
@@ -128,6 +139,7 @@ export function createBlockDefs(types) {
         },
       ],
       'previousStatement': [type],
+      'mutator': 'bind_type_mutator',
     });
     blocks.push({
       'type': 'static_' + type + '_main_prev_statement',
@@ -150,12 +162,14 @@ export function createBlockDefs(types) {
         },
       ],
       'previousStatement': [type],
+      'mutator': 'bind_type_mutator',
     });
     blocks.push({
       'type': 'static_' + type + '_main_prev_next',
       'message0': '',
       'previousStatement': [type],
       'nextStatement': [type],
+      'mutator': 'bind_type_mutator',
     });
   }
   return blocks;
@@ -199,11 +213,10 @@ export function clearTwoBlockTests() {
  */
 export function runTwoBlockTests() {
   /**
-   * Creates a function which creates a new block and returns its next
-   * connection or first input connection.
+   * Creates a function which returns the input of an outer block.
    * @param {string} suffix The suffix for the block type.
    * @return {function(string, string=): !Blockly.Connection} A function that
-   *     takes in a type name and returns next connection or input connection.
+   *     takes in a type name and returns an input connection.
    */
   function createGetOuterInput(suffix) {
     return function(type, name) {
@@ -216,12 +229,10 @@ export function runTwoBlockTests() {
   }
 
   /**
-   * Creates a function which creates a new block and returns its output
-   * connection or previous connection.
+   * Creates a function which returns the output of an inner block.
    * @param {string} suffix The suffix for the block type.
    * @return {function(string, string=): !Blockly.Connection} A function that
-   *     takes in a type name and returns an output connection or
-   *     previous connection.
+   *     takes in a type name and returns an output connection.
    */
   function createGetInnerOutput(suffix) {
     return function(type, name) {
@@ -299,11 +310,10 @@ export function clearThreeBlockTests() {
  */
 export function runThreeBlockTests() {
   /**
-   * Creates a function which creates a new block and returns its next
-   * connection or first input connection.
+   * Creates a function which returns the input of an outer block.
    * @param {string} suffix The suffix for the block type.
    * @return {function(string, string=): !Blockly.Connection} A function that
-   *     takes in a type name and returns a next connection or input connection.
+   *     takes in a type name and returns an input connection.
    */
   function createGetOuterInput(suffix) {
     return function(type, name) {
@@ -316,14 +326,13 @@ export function runThreeBlockTests() {
   }
 
   /**
-   * Creates a function which creates a new block and returns an object
-   * containing its next/input and previous/output connections.
+   * Creates a function which returns an object containing the input and output
    * of a main block.
    * @param {string} suffix The suffix for the block type.
    * @return {function(string, string=):
    *     {in: !Blockly.Connection, out: !Blockly.Connection}} A function that
-   *     takes in a type name and returns an object containing next/input
-   *     connections and previous/output connections.
+   *     takes in a type name and returns an object containing input and output
+   *     connections.
    */
   function createGetMain(suffix) {
     return function(type, name) {
@@ -343,11 +352,10 @@ export function runThreeBlockTests() {
   }
 
   /**
-   * Creates a function which creates a new block returns its output or previous
-   * connection.
+   * Creates a function which returns the output of an inner block.
    * @param {string} suffix The suffix for the block type.
    * @return {function(string, string=): !Blockly.Connection} A function that
-   *     takes in a type name and returns an output/previous connection.
+   *     takes in a type name and returns an output connection.
    */
   function createGetInnerOutput(suffix) {
     return function(type, name) {
@@ -489,8 +497,7 @@ export function clearSiblingTests() {
  */
 export function runSiblingTests() {
   /**
-   * Creates a function which creates a block and returns its next connection or
-   * first input connection.
+   * Creates a function which returns the input of an outer block.
    * @param {string} suffix The suffix for the block type.
    * @return {function(string, string=): !Blockly.Connection} A function that
    *     takes in a type name and returns an input connection.
@@ -506,8 +513,8 @@ export function runSiblingTests() {
   }
 
   /**
-   * Creates a function which creates a block and returns an object containing
-   * the its three input connections, and its output/previous connection.
+   * Creates a function which returns an object containing the inputs and output
+   * of a main block.
    * @param {string} suffix The suffix for the block type.
    * @return {function(string, string=):{
    *     out: !Blockly.Connection,
@@ -539,8 +546,7 @@ export function runSiblingTests() {
   }
 
   /**
-   * Creates a function which creates a block and returns its output/previous
-   * connection.
+   * Creates a function which returns the output of an inner block.
    * @param {string} suffix The suffix for the block type.
    * @return {function(string, string=): !Blockly.Connection} A function that
    *     takes in a type name and returns an output connection.
@@ -600,3 +606,43 @@ function runTests(tests) {
     }
   }
 }
+
+
+const BIND_TYPE_MUTATOR = {
+  mutationToDom: function() {
+    if (!this.boundTypes_.size) {
+      return null;
+    }
+    const container = Blockly.utils.xml.createElement('mutation');
+    for (const [genericType, explicitType] of this.boundTypes_) {
+      const typeElem = Blockly.utils.xml.createElement('type');
+      typeElem.setAttribute('generictype', genericType);
+      typeElem.setAttribute('explicittype', explicitType);
+      container.appendChild(typeElem);
+    }
+    if (!container.childNodes.length) {
+      return null;
+    }
+    return container;
+  },
+
+  domToMutation: function(xmlElement) {
+    for (const childNode of xmlElement.childNodes) {
+      this.bindType(
+          childNode.getAttribute('generictype'),
+          childNode.getAttribute('explicittype'));
+    }
+  },
+
+  bindType: function(genericType, explicitType) {
+    this.workspace.connectionChecker.bindType(this, genericType, explicitType);
+    this.boundTypes_.set(genericType, explicitType);
+  },
+};
+
+const BIND_TYPE_HELPER = function() {
+  this.boundTypes_ = new Map();
+};
+
+Blockly.Extensions.registerMutator(
+    'bind_type_mutator', BIND_TYPE_MUTATOR, BIND_TYPE_HELPER);
