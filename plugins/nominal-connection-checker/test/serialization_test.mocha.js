@@ -21,11 +21,6 @@ const {
 } = require('./connection_checker_test_helper.mocha');
 
 suite('Serialization', function() {
-  /* TODO:
-   *   Block whose mutator binds the block. (should be fine since mutations
-   *     load first)
-   */
-
   setup(function() {
     const hierarchyDef = {
       // Random is a type disconnected from the rest of the hierarchy.
