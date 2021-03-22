@@ -112,8 +112,8 @@ export class TypeHierarchy {
         if (!unvisitedSupers.length) {
           type.supers().forEach((superName) => {
             const superType = this.types_.get(superName);
-            superType.ancestors().forEach(
-                (ancestor) => type.addAncestor(ancestor, superType));
+            superType.ancestors().forEach((ancestor) =>
+              type.addAncestor(this.types_.get(ancestor), superType));
           });
           unvisitedTypes.delete(typeName);
         }
@@ -686,8 +686,6 @@ class TypeDef {
     this.ancestorParamsMap_ = new Map();
   }
 
-  // TODO: Make all of the adding more consistent (always take def)
-
   /**
    * Adds the given type to the list of direct superTypes of this type.
    * @param {!TypeStructure} superType The type structure representing the type
@@ -708,33 +706,33 @@ class TypeDef {
 
   /**
    * Adds the given type to the list of ancestors of this type.
-   * @param {string} ancestorName The caseless name of the type to add to the
+   * @param {!TypeDef} ancestorDef The type definition of the type to add to the
    *     list of ancestors of this type.
-   * @param {!TypeDef} superType The superType that we get this ancestor from.
+   * @param {!TypeDef} superDef The supertype that we get this ancestor from.
    */
-  addAncestor(ancestorName, superType) {
-    this.ancestors_.add(ancestorName);
-    const superToAncestor = superType.getParamsForAncestor(ancestorName);
-    const thisToSuper = this.getParamsForAncestor(superType.name);
+  addAncestor(ancestorDef, superDef) {
+    this.ancestors_.add(ancestorDef.name);
+    const superToAncestor = superDef.getParamsForAncestor(ancestorDef.name);
+    const thisToSuper = this.getParamsForAncestor(superDef.name);
     const thisToAncestor = [];
     superToAncestor.forEach((typeStruct) => {
       if (isGeneric(typeStruct.name)) {
         thisToAncestor.push(
-            thisToSuper[superType.getIndexOfParam(typeStruct.name)]);
+            thisToSuper[superDef.getIndexOfParam(typeStruct.name)]);
       } else {
         thisToAncestor.push(typeStruct);
       }
     });
-    this.ancestorParamsMap_.set(ancestorName, thisToAncestor);
+    this.ancestorParamsMap_.set(ancestorDef.name, thisToAncestor);
   }
 
   /**
    * Adds the given type to the list of descendants of this type.
    * @param {!TypeDef} descendantDef The type definition that defines the
    *     descendant.
-   * @param {!TypeDef} subType The subtype that we get this descendant from.
+   * @param {!TypeDef} subDef The subtype that we get this descendant from.
    */
-  addDescendant(descendantDef, subType) {
+  addDescendant(descendantDef, subDef) {
     this.descendants_.add(descendantDef.name);
   }
 
