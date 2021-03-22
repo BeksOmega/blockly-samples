@@ -65,113 +65,131 @@ export function createBlockDefs(types) {
       'mutator': 'bind_type_mutator',
     });
 
-    blocks.push({
-      'type': 'static_' + type + '_main_out_value',
-      'message0': '%1 %2 %3',
-      'args0': [
-        {
-          'type': 'input_value',
-          'name': 'INPUT1',
-          'check': [type],
-        },
-        {
-          'type': 'input_value',
-          'name': 'INPUT2',
-          'check': [type],
-        },
-        {
-          'type': 'input_value',
-          'name': 'INPUT3',
-          'check': [type],
-        },
-      ],
-      'output': [type],
-      'mutator': 'bind_type_mutator',
-    });
-    blocks.push({
-      'type': 'static_' + type + '_main_out_statement',
-      'message0': '%1 %2 %3',
-      'args0': [
-        {
-          'type': 'input_statement',
-          'name': 'INPUT1',
-          'check': [type],
-        },
-        {
-          'type': 'input_statement',
-          'name': 'INPUT2',
-          'check': [type],
-        },
-        {
-          'type': 'input_statement',
-          'name': 'INPUT3',
-          'check': [type],
-        },
-      ],
-      'output': [type],
-      'mutator': 'bind_type_mutator',
-    });
-    blocks.push({
-      'type': 'static_' + type + '_main_out_next',
-      'message0': '',
-      'output': [type],
-      'nextStatement': [type],
-      'mutator': 'bind_type_mutator',
-    });
-    blocks.push({
-      'type': 'static_' + type + '_main_prev_value',
-      'message0': '%1 %2 %3',
-      'args0': [
-        {
-          'type': 'input_value',
-          'name': 'INPUT1',
-          'check': [type],
-        },
-        {
-          'type': 'input_value',
-          'name': 'INPUT2',
-          'check': [type],
-        },
-        {
-          'type': 'input_value',
-          'name': 'INPUT3',
-          'check': [type],
-        },
-      ],
-      'previousStatement': [type],
-      'mutator': 'bind_type_mutator',
-    });
-    blocks.push({
-      'type': 'static_' + type + '_main_prev_statement',
-      'message0': '%1 %2 %3',
-      'args0': [
-        {
-          'type': 'input_statement',
-          'name': 'INPUT1',
-          'check': [type],
-        },
-        {
-          'type': 'input_statement',
-          'name': 'INPUT2',
-          'check': [type],
-        },
-        {
-          'type': 'input_statement',
-          'name': 'INPUT3',
-          'check': [type],
-        },
-      ],
-      'previousStatement': [type],
-      'mutator': 'bind_type_mutator',
-    });
-    blocks.push({
-      'type': 'static_' + type + '_main_prev_next',
-      'message0': '',
-      'previousStatement': [type],
-      'nextStatement': [type],
-      'mutator': 'bind_type_mutator',
-    });
+    blocks.push(...createMainBlockDefs(type));
   }
+  return blocks;
+}
+
+/**
+ * Returns an array of JSON block definitions based on the given connection
+ * information. These blocks are all "main" blocks which have both
+ * output/previous and input/next connections.
+ * @param {string} name The name to use in the block's type property.
+ * @param {string=} out The output connection check, defaults to name.
+ * @param {string=} in1 The first input connection check, defaults to name.
+ * @param {string=} in2 The second input connection check, defaults to in1.
+ * @param {string=} in3 The third input connection check, defaults to in2.
+ * @return {!Array<!Object>} Blockly block definitions.
+ */
+export function createMainBlockDefs(
+    name, out = name, in1 = name, in2 = in1, in3 = in1) {
+  const blocks = [];
+  blocks.push({
+    'type': 'static_' + name + '_main_out_value',
+    'message0': '%1 %2 %3',
+    'args0': [
+      {
+        'type': 'input_value',
+        'name': 'INPUT1',
+        'check': [in1],
+      },
+      {
+        'type': 'input_value',
+        'name': 'INPUT2',
+        'check': [in2],
+      },
+      {
+        'type': 'input_value',
+        'name': 'INPUT3',
+        'check': [in3],
+      },
+    ],
+    'output': [out],
+    'mutator': 'bind_type_mutator',
+  });
+  blocks.push({
+    'type': 'static_' + name + '_main_out_statement',
+    'message0': '%1 %2 %3',
+    'args0': [
+      {
+        'type': 'input_statement',
+        'name': 'INPUT1',
+        'check': [in1],
+      },
+      {
+        'type': 'input_statement',
+        'name': 'INPUT2',
+        'check': [in2],
+      },
+      {
+        'type': 'input_statement',
+        'name': 'INPUT3',
+        'check': [in3],
+      },
+    ],
+    'output': [out],
+    'mutator': 'bind_type_mutator',
+  });
+  blocks.push({
+    'type': 'static_' + name + '_main_out_next',
+    'message0': '',
+    'output': [out],
+    'nextStatement': [in1],
+    'mutator': 'bind_type_mutator',
+  });
+  blocks.push({
+    'type': 'static_' + name + '_main_prev_value',
+    'message0': '%1 %2 %3',
+    'args0': [
+      {
+        'type': 'input_value',
+        'name': 'INPUT1',
+        'check': [in1],
+      },
+      {
+        'type': 'input_value',
+        'name': 'INPUT2',
+        'check': [in2],
+      },
+      {
+        'type': 'input_value',
+        'name': 'INPUT3',
+        'check': [in3],
+      },
+    ],
+    'previousStatement': [out],
+    'mutator': 'bind_type_mutator',
+  });
+  blocks.push({
+    'type': 'static_' + name + '_main_prev_statement',
+    'message0': '%1 %2 %3',
+    'args0': [
+      {
+        'type': 'input_statement',
+        'name': 'INPUT1',
+        'check': [in1],
+      },
+      {
+        'type': 'input_statement',
+        'name': 'INPUT2',
+        'check': [in2],
+      },
+      {
+        'type': 'input_statement',
+        'name': 'INPUT3',
+        'check': [in3],
+      },
+    ],
+    'previousStatement': [out],
+    'mutator': 'bind_type_mutator',
+  });
+  blocks.push({
+    'type': 'static_' + name + '_main_prev_next',
+    'message0': '',
+    'previousStatement': [out],
+    'nextStatement': [in1],
+    'mutator': 'bind_type_mutator',
+  });
   return blocks;
 }
 
@@ -225,6 +243,7 @@ export function runTwoBlockTests() {
       const inConn = block.nextConnection ||
           block.getInput('INPUT1').connection;
       inConn.name = name || type + 'In';
+      inConn.block = block;
       return inConn;
     };
   }
@@ -242,6 +261,7 @@ export function runTwoBlockTests() {
       const block = this.workspace.newBlock('static_' + type + suffix);
       const outConn = block.outputConnection || block.previousConnection;
       outConn.name = name || type + 'Out';
+      outConn.block = block;
       return outConn;
     };
   }
@@ -325,6 +345,7 @@ export function runThreeBlockTests() {
       const inConn = block.nextConnection ||
           block.getInput('INPUT1').connection;
       inConn.name = name || type + 'In';
+      inConn.block = block;
       return inConn;
     };
   }
@@ -352,6 +373,7 @@ export function runThreeBlockTests() {
       return {
         out: outConn,
         in: inConn,
+        block: block
       };
     };
   }
@@ -368,6 +390,7 @@ export function runThreeBlockTests() {
       const block = this.workspace.newBlock('static_' + type + suffix);
       const outConn = block.outputConnection || block.previousConnection;
       outConn.name = name || type + 'Out';
+      outConn.block = block;
       return outConn;
     };
   }
@@ -515,6 +538,7 @@ export function runSiblingTests() {
       const inConn = block.nextConnection ||
           block.getInput('INPUT1').connection;
       inConn.name = name || type + 'In';
+      inConn.block = block;
       return inConn;
     };
   }
@@ -548,6 +572,7 @@ export function runSiblingTests() {
         in1: inConn1,
         in2: inConn2,
         in3: inConn3,
+        block: block,
       };
     };
   }
@@ -564,6 +589,7 @@ export function runSiblingTests() {
       const block = this.workspace.newBlock('static_' + type + suffix);
       const outConn = block.outputConnection || block.previousConnection;
       outConn.name = name || type + 'Out';
+      outConn.block = block;
       return outConn;
     };
   }

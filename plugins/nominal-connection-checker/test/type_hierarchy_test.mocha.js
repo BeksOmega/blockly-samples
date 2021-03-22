@@ -3402,6 +3402,82 @@ suite('TypeHierarchy', function() {
         });
       });
     });
+
+    suite('Generic params', function() {
+      suite('Single param', function() {
+        suite('Covariant', function() {
+          setup(function() {
+            this.hierarchy = new TypeHierarchy({
+              'typeA': {
+                'params': [
+                  {
+                    'name': 'A',
+                    'variance': 'co',
+                  },
+                ],
+              },
+              'typeB': {},
+            });
+          });
+
+          test('Super generic', function() {
+            this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
+          });
+
+          test('Sub generic', function() {
+            this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
+          });
+        });
+
+        suite('Contravariant', function() {
+          setup(function() {
+            this.hierarchy = new TypeHierarchy({
+              'typeA': {
+                'params': [
+                  {
+                    'name': 'A',
+                    'variance': 'contra',
+                  },
+                ],
+              },
+              'typeB': {},
+            });
+          });
+
+          test('Super generic', function() {
+            this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
+          });
+
+          test('Sub generic', function() {
+            this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
+          });
+        });
+
+        suite('Invariant', function() {
+          setup(function() {
+            this.hierarchy = new TypeHierarchy({
+              'typeA': {
+                'params': [
+                  {
+                    'name': 'A',
+                    'variance': 'inv',
+                  },
+                ],
+              },
+              'typeB': {},
+            });
+          });
+
+          test('Super generic', function() {
+            this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
+          });
+
+          test('Sub generic', function() {
+            this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
+          });
+        });
+      });
+    });
   });
 
   suite('nearestCommonParents', function() {
