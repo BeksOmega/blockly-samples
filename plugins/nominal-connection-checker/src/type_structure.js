@@ -48,6 +48,19 @@ export class TypeStructure {
   }
 }
 
+/**
+ * Returns a deep copy of the given type structure.
+ * @param {!TypeStructure} struct The type structure to copy.
+ * @return {!TypeStructure} The duplicate type structure.
+ */
+export function duplicateStructure(struct) {
+  const newStruct = new TypeStructure(struct.name);
+  struct.params.forEach((param) => {
+    newStruct.params.push(duplicateStructure(param));
+  });
+  return newStruct;
+}
+
 // The below can be turned into a factory pattern if we ever want to allow for
 // different ways of writing type strings.
 

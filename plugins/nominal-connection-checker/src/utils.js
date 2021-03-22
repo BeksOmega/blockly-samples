@@ -70,3 +70,25 @@ export function isGenericConnection(connection) {
 export function isExplicitConnection(connection) {
   return isExplicit(getCheck(connection));
 }
+
+/**
+ * Creates all combinations of elements in the subarrays as arrays. If any
+ * subarray is an empty array, this evaluates to an empty array.
+ * @param {!Array<!Array<*>>} firstArray The first array to add the items
+ *     of the second array onto. Should be an array of arrays for proper
+ *     combinating.
+ * @param {!Array<*>} secondArray An array of elements used to create
+ *     combinations.
+ * @param {!Array<!Array<*>>} rest The rest of the arrays of elements.
+ * @return {!Array<!Array<*>>} All combinations of elements in all of the
+ *     subarrays.
+ * @private
+ */
+export function combine([firstArray, ...[secondArray, ...rest]]) {
+  if (!secondArray) {
+    return firstArray;
+  }
+  const combined = firstArray.flatMap((a) =>
+    secondArray.map((b) => [].concat(a, b)));
+  return combine([combined, ...rest]);
+}
