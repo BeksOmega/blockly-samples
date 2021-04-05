@@ -16,7 +16,7 @@ import {
   getCheck,
   isGeneric,
   isGenericConnection,
-  combine,
+  combine, STANDARD_GENERIC, STANDARD_GENERIC_TYPE,
 } from './utils';
 
 
@@ -98,7 +98,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     const childTypes = this.getExplicitTypesOfConnectionInternal_(child);
     const typeHierarchy = this.getTypeHierarchy_();
 
-    if (parentTypes[0].name == '*' || childTypes[0].name == '*') {
+    if (parentTypes[0].equals(STANDARD_GENERIC) ||
+        childTypes[0].equals(STANDARD_GENERIC)) {
       // At least one is an unbound generic.
       return true;
     }
@@ -142,7 +143,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   getExplicitTypes(block, genericType) {
     try {
       const types = this.getBoundTypes_(block, genericType.toLowerCase());
-      if (types[0].name == '*') {
+      if (types[0].equals(STANDARD_GENERIC)) {
         return [];
       }
       return types.map((type) => structureToString(type));
@@ -157,7 +158,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    * Returns the explicit type(s) of the given connection. If the connection is
    * itself explicit, this just returns that type. If the connection is generic
    * it attempts to find the explicit type(s) bound to it. If a binding for a
-   * generic connection cannot be found, the generic type is replaced with '*'.
+   * generic connection cannot be found, the generic type is replaced with the
+   * STANDARD_GENERIC.
    *
    * Note that we only get multiple types via type unification of types that
    * are externally bound to generic types, or associated with generic
@@ -303,7 +305,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   /**
    * Returns an array of the given type structure with its generic params
    * replaced with all valid combinations of bindings. If a generic is unbound
-   * then it replaced with '*'.
+   * then it replaced with the STANDARD_GENERIC.
    * @param {!Blockly.Block} block The block that gives context to the generic
    *     bindings.
    * @param {!TypeStructure} struct The struct to replace the generics of.
@@ -335,7 +337,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
 
   /**
    * Returns the explicit type(s) bound to the block generic type pair if one
-   * exists. If no explicit type is found, this returns an array of ['*'].
+   * exists. If no explicit type is found, this returns an array containing only
+   * the STANDARD_GENERIC_TYPE.
    *
    * Note that we only get multiple types via type unification of types that
    * are externally bound, or associated with input connections.
@@ -373,7 +376,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     if (types.length) {
       return this.getTypeHierarchy_().getNearestCommonParents(...types);
     }
-    return [new TypeStructure('*')];
+    return [STANDARD_GENERIC];
   }
 
   /**
@@ -401,7 +404,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    * genericType, and it is not the connectionToSkip. Returns the bound type(s)
    * associated with this connection. If the connection is invalid, returns an
    * empty array. If no binding could be found for the generic type, returns
-   * ['*'].
+   * an array containing only the STANDARD_GENERIC_TYPE.
    * @param {!Blockly.Connection} connection The connection to get the bound
    *     type of.
    * @param {string} genericType The generic type to find the bound type of.
@@ -410,7 +413,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    * @return {!Array<!TypeStructure>} The bound type(s) associated with the
    *     passed connection, if the connection is valid and bound types could
    *     be found. If the connect is invalid, returns an empty array. If no
-   *     binding could be found for the generic type, returns ['*'].
+   *     binding could be found for the generic type, returns an array
+   *     containing only the STANDARD_GENERIC_TYPE.
    * @private
    */
   getConnectionTypes_(connection, genericType, connectionToSkip) {
@@ -486,13 +490,13 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     const outputBinding = this.getConnectionTypes_(
         block.outputConnection, genericType);
     if (outputBinding.length &&
-        outputBinding[0].name != '*') {
+        outputBinding[0].equals(STANDARD_GENERIC)) {
       return false;
     }
     const previousBinding = this.getConnectionTypes_(
         block.previousConnection, genericType);
     if (previousBinding.length &&
-        previousBinding[0].name != '*') {
+        previousBinding[0].equals(STANDARD_GENERIC)) {
       return false;
     }
     return true;
