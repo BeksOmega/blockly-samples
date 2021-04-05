@@ -61,7 +61,7 @@ export function isGeneric(type) {
  * @private
  */
 export function isExplicit(type) {
-  return type.length > 1;
+  return !isGeneric(type);
 }
 
 /**

@@ -64,7 +64,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    * TODO: Add some sort of JSON schema for the hierarchy.
    */
   init(hierarchyDef) {
-    this.typeHierarchy_ = new TypeHierarchy(hierarchyDef);
+    this.typeHierarchy_ = new TypeHierarchy(
+        hierarchyDef, parseType, isGeneric, STANDARD_GENERIC);
   }
 
   /**
