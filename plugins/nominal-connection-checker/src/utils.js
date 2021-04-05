@@ -5,9 +5,28 @@
  */
 
 
+import {TypeStructure} from './type_structure';
+
 /**
- * @fileoverview A file defining helper functions useful in multiple modules.
+ * @fileoverview A file defining helper functions/constants useful in multiple
+ * modules.
  */
+
+/**
+ * A standard representation of a generic type.
+ * In this implementation generic types are replaced with this type when no
+ * binding can be found. This is to make that case clear when debugging.
+ * @type {string}
+ */
+export const STANDARD_GENERIC_TYPE = '*';
+
+/**
+ * A standard representation of a generic type structure.
+ * In this implementation generic types are replaced with this type when no
+ * binding can be found. This is to make that case clear when debugging.
+ * @type {!TypeStructure}
+ */
+export const STANDARD_GENERIC = new TypeStructure(STANDARD_GENERIC_TYPE);
 
 /**
  * Returns the type name (which could be generic) associated with the
