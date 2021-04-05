@@ -10,12 +10,8 @@
  */
 'use strict';
 
-import {
-  TypeStructure,
-  parseType,
-  structureToString,
-} from './type_structure';
-import {isGeneric, combine, isExplicit} from './utils';
+import {TypeStructure, duplicateStructure} from './type_structure';
+import {combine} from './utils';
 
 
 /**
@@ -26,12 +22,48 @@ export class TypeHierarchy {
   /**
    * Constructs the TypeHierarchy, initializing it with the given hierarchyDef.
    * @param {!Object} hierarchyDef The definition of the type hierarchy.
-   * @param {!TypeStructure} genericTypeStructure Represents a generic type (in
-   *     the form of a type structure) that binding could not be found for.
-   * @param {string} genericType Represents a generic type (in the form of a
-   *     string) that a binding could not be found for.
+   * @param {function(string):!TypeStructure} parseTypeFn Transforms a given
+   *     string representation of a type (specifically those found in the passed
+   *     hierarchyDef) into a TypeStructure.
+   * @param {function(string):boolean} isGenericFn Returns true if the given
+   *     string represents a generic type. All strings which are not generic are
+   *     considered to be explicit (this function partitions the set of all
+   *     strings into generic types and explicit types).
+   * @param {!TypeStructure} standardGeneric A type structure representing a
+   *     "standard" generic type. This is used to represent unified generic
+   *     types.
    */
-  constructor(hierarchyDef) {
+  constructor(hierarchyDef, parseTypeFn, isGenericFn, standardGeneric) {
+    /**
+     * Transforms a given string representation of a type into a TypeStructure.
+     * @type {function(string):!TypeStructure}
+     * @private
+     */
+    this.parseType_ = parseTypeFn;
+
+    /**
+     * Returns true if the given string is generic. False if it is explicit.
+     * @type {function(string): boolean}
+     * @private
+     */
+    this.isGeneric_ = isGenericFn;
+
+    /**
+     * Returns true if the given string is explicit. False if it is generic.
+     * @param {string} str The string to check the generic-ness of.
+     * @return {boolean} True if the given string is explicit. False if it is
+     *     generic.
+     * @private
+     */
+    this.isExplicit_ = (str) => !isGenericFn(str);
+
+    /**
+     * A type structure representing a "standard" generic type.
+     * @type {!TypeStructure}
+     * @private
+     */
+    this.standardGeneric_ = standardGeneric;
+
     /**
      * Map of type names to TypeDefs.
      * @type {!Map<string, !TypeDef>}
@@ -92,7 +124,7 @@ export class TypeHierarchy {
       }
       if (info.fulfills && info.fulfills.length) {
         info.fulfills.forEach(
-            (superType) => type.addSuper(parseType(superType)));
+            (superType) => type.addSuper(this.parseType_(superType)));
       }
       this.types_.set(lowerCaseName, type);
     }
@@ -292,7 +324,7 @@ export class TypeHierarchy {
     this.validateTypeStructure_(type2);
 
     const isExactlyTypeRec = (typeA, typeB) => {
-      if (isGeneric(typeA.name) || isGeneric(typeB.name)) {
+      if (this.isGeneric_(typeA.name) || this.isGeneric_(typeB.name)) {
         return true;
       }
       return typeA.name == typeB.name &&
@@ -318,7 +350,7 @@ export class TypeHierarchy {
     this.validateTypeStructure_(subType);
     this.validateTypeStructure_(superType);
 
-    if (isGeneric(subType.name) || isGeneric(superType.name)) {
+    if (this.isGeneric_(subType.name) || this.isGeneric_(superType.name)) {
       return true;
     }
 
@@ -363,9 +395,9 @@ export class TypeHierarchy {
     }
     types.forEach((type) => this.validateTypeStructure_(type));
 
-    types = types.filter((type) => isExplicit(type.name));
+    types = types.filter((type) => this.isExplicit_(type.name));
     if (!types.length) { // All types were generic.
-      return [new TypeStructure('*')];
+      return [duplicateStructure(this.standardGeneric_)];
     }
 
     // Get the nearest common types for the "outer" types.
@@ -576,7 +608,7 @@ export class TypeHierarchy {
       // Null represents a type that we don't have info for.
       return !target ? [] : [target];
     }
-    if (!target || isGeneric(target.name) || !source.params.length) {
+    if (!target || this.isGeneric_(target.name) || !source.params.length) {
       return [];
     }
 
@@ -621,7 +653,7 @@ export class TypeHierarchy {
    * @private
    */
   validateTypeStructure_(struct) {
-    if (isGeneric(struct.name)) {
+    if (this.isGeneric_(struct.name)) {
       if (struct.params.length) {
         throw new GenericWithParamsError();
       }
@@ -775,14 +807,13 @@ export class TypeHierarchy {
       // to hierarchy validation.
       return formalParams.every((formalParam, i) => {
         const actualParam = actualParams[i];
-        if (isGeneric(formalParam.name)) {
+        if (this.isGeneric_(formalParam.name)) {
           const descParamInd = descendantDef.getIndexOfParam(formalParam.name);
           const currParam = replacedParams[descParamInd];
           if (currParam != null && !currParam.equals(actualParam)) {
             return false;
           }
-          replacedParams[descParamInd] =
-              parseType(structureToString(actualParam));
+          replacedParams[descParamInd] = duplicateStructure(actualParam);
           return true;
         }
         // TODO: This is assuming that the explicit types are compatible, but
@@ -889,7 +920,7 @@ class TypeDef {
     const thisToSuper = this.getParamsForAncestor(superDef.name);
     const thisToAncestor = [];
     superToAncestor.forEach((typeStruct) => {
-      if (isGeneric(typeStruct.name)) {
+      if (this.isGeneric_(typeStruct.name)) {
         thisToAncestor.push(
             thisToSuper[superDef.getIndexOfParam(typeStruct.name)]);
       } else {
@@ -1069,7 +1100,7 @@ class TypeDef {
 
     // Deep copy structure so that we don't have to worry about corruption.
     const params = this.ancestorParamsMap_.get(ancestorName)
-        .map((param) => param ? parseType(structureToString(param)) : null);
+        .map((param) => param ? duplicateStructure(param) : null);
     if (actualTypes) {
       const replaceFn = (param, i, array) => {
         if (!param) {
