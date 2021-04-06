@@ -3929,7 +3929,7 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeZ', 'typeV', 'typeQ'],
           },
         });
-      })
+      });
 
       test('X and Y', function() {
         this.assertNearestCommonParents(
@@ -7271,7 +7271,7 @@ suite('TypeHierarchy', function() {
             'fulfills': ['typeZ', 'typeV', 'typeQ'],
           },
         });
-      })
+      });
 
       test('X and Y', function() {
         this.assertNoNearestCommonDescendants(
@@ -7312,7 +7312,7 @@ suite('TypeHierarchy', function() {
               'fulfills': ['typeA', 'typeB'],
             },
           });
-        })
+        });
 
         test('A and B', function() {
           this.assertNearestCommonDescendants(
@@ -7331,138 +7331,144 @@ suite('TypeHierarchy', function() {
       });
 
       suite('Three parents, three children', function() {
-        const hierarchy = this.createTypeHierarchy({
-          'typeA': {},
-          'typeB': {},
-          'typeC': {},
-          'typeD': {
-            'fulfills': ['typeA', 'typeB'],
-          },
-          'typeE': {
-            'fulfills': ['typeA', 'typeB', 'typeC'],
-          },
-          'typeF': {
-            'fulfills': ['typeB', 'typeC'],
-          },
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {},
+            'typeB': {},
+            'typeC': {},
+            'typeD': {
+              'fulfills': ['typeA', 'typeB'],
+            },
+            'typeE': {
+              'fulfills': ['typeA', 'typeB', 'typeC'],
+            },
+            'typeF': {
+              'fulfills': ['typeB', 'typeC'],
+            },
+          });
         });
 
         test('A and B', function() {
           this.assertNearestCommonDescendants(
-              hierarchy, ['typeA', 'typeB'], ['typeD', 'typeE']);
+              this.hierarchy, ['typeA', 'typeB'], ['typeD', 'typeE']);
         });
 
         test('B and C', function() {
           this.assertNearestCommonDescendants(
-              hierarchy, ['typeB', 'typeC'], ['typeE', 'typeF']);
+              this.hierarchy, ['typeB', 'typeC'], ['typeE', 'typeF']);
         });
 
         test('A and C', function() {
           this.assertNearestCommonDescendants(
-              hierarchy, ['typeA', 'typeC'], ['typeE']);
+              this.hierarchy, ['typeA', 'typeC'], ['typeE']);
         });
 
         test('A, B and C', function() {
           this.assertNearestCommonDescendants(
-              hierarchy, ['typeA', 'typeB', 'typeC'], ['typeE']);
+              this.hierarchy, ['typeA', 'typeB', 'typeC'], ['typeE']);
         });
 
         test('A, B and D', function() {
           this.assertNearestCommonDescendants(
-              hierarchy, ['typeA', 'typeB', 'typeD'], ['typeD']);
+              this.hierarchy, ['typeA', 'typeB', 'typeD'], ['typeD']);
         });
 
         test('A, B, C and E', function() {
           this.assertNearestCommonDescendants(
-              hierarchy, ['typeA', 'typeB', 'typeC', 'typeE'], ['typeE']);
+              this.hierarchy, ['typeA', 'typeB', 'typeC', 'typeE'], ['typeE']);
         });
 
         test('A, B and F', function() {
           this.assertNoNearestCommonDescendants(
-              hierarchy, ['typeA', 'typeB', 'typeF']);
+              this.hierarchy, ['typeA', 'typeB', 'typeF']);
         });
       });
 
       suite('Two layers', function() {
-        const hierarchy = this.createTypeHierarchy({
-          'typeA': {},
-          'typeB': {},
-          'typeC': {
-            'fulfills': ['typeA', 'typeB'],
-          },
-          'typeD': {
-            'fulfills': ['typeA', 'typeB'],
-          },
-          'typeE': {},
-          'typeF': {
-            'fulfills': ['typeC', 'typeD'],
-          },
-          'typeG': {
-            'fulfills': ['typeC', 'typeD', 'typeE'],
-          },
-          'typeH': {
-            'fulfills': ['typeD', 'typeE'],
-          },
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {},
+            'typeB': {},
+            'typeC': {
+              'fulfills': ['typeA', 'typeB'],
+            },
+            'typeD': {
+              'fulfills': ['typeA', 'typeB'],
+            },
+            'typeE': {},
+            'typeF': {
+              'fulfills': ['typeC', 'typeD'],
+            },
+            'typeG': {
+              'fulfills': ['typeC', 'typeD', 'typeE'],
+            },
+            'typeH': {
+              'fulfills': ['typeD', 'typeE'],
+            },
+          });
         });
 
         test('A and B', function() {
           this.assertNearestCommonDescendants(
-              hierarchy, ['typeA', 'typeB'], ['typeC', 'typeD']);
+              this.hierarchy, ['typeA', 'typeB'], ['typeC', 'typeD']);
         });
 
         test('A, B and E', function() {
           this.assertNearestCommonDescendants(
-              hierarchy, ['typeA', 'typeB', 'typeE'], ['typeG', 'typeH']);
+              this.hierarchy, ['typeA', 'typeB', 'typeE'], ['typeG', 'typeH']);
         });
       });
 
       suite('Three layers', function() {
-        const hierarchy = this.createTypeHierarchy({
-          'typeA': {},
-          'typeB': {},
-          'typeC': {
-            'fulfills': ['typeA', 'typeB'],
-          },
-          'typeD': {
-            'fulfills': ['typeA', 'typeB'],
-          },
-          'typeE': {},
-          'typeF': {
-            'fulfills': ['typeC', 'typeD'],
-          },
-          'typeG': {
-            'fulfills': ['typeC', 'typeD', 'typeE'],
-          },
-          'typeH': {
-            'fulfills': ['typeD', 'typeE'],
-          },
-          'typeI': {},
-          'typeJ': {
-            'fulfills': ['typeF', 'typeG'],
-          },
-          'typeK': {
-            'fulfills': ['typeF', 'typeG', 'typeH'],
-          },
-          'typeL': {
-            'fulfills': ['typeG', 'typeH', 'typeI'],
-          },
-          'typeM': {
-            'fulfills': ['typeH', 'typeI'],
-          },
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {},
+            'typeB': {},
+            'typeC': {
+              'fulfills': ['typeA', 'typeB'],
+            },
+            'typeD': {
+              'fulfills': ['typeA', 'typeB'],
+            },
+            'typeE': {},
+            'typeF': {
+              'fulfills': ['typeC', 'typeD'],
+            },
+            'typeG': {
+              'fulfills': ['typeC', 'typeD', 'typeE'],
+            },
+            'typeH': {
+              'fulfills': ['typeD', 'typeE'],
+            },
+            'typeI': {},
+            'typeJ': {
+              'fulfills': ['typeF', 'typeG'],
+            },
+            'typeK': {
+              'fulfills': ['typeF', 'typeG', 'typeH'],
+            },
+            'typeL': {
+              'fulfills': ['typeG', 'typeH', 'typeI'],
+            },
+            'typeM': {
+              'fulfills': ['typeH', 'typeI'],
+            },
+          });
         });
 
         test('A and B', function() {
           this.assertNearestCommonDescendants(
-              hierarchy, ['typeA', 'typeB'], ['typeC', 'typeD']);
+              this.hierarchy, ['typeA', 'typeB'], ['typeC', 'typeD']);
         });
 
         test('A, B and E', function() {
           this.assertNearestCommonDescendants(
-              hierarchy, ['typeA', 'typeB', 'typeE'], ['typeG', 'typeH']);
+              this.hierarchy, ['typeA', 'typeB', 'typeE'], ['typeG', 'typeH']);
         });
 
         test('A, B, E and I', function() {
           this.assertNearestCommonDescendants(
-              hierarchy,
+              this.hierarchy,
               ['typeA', 'typeB', 'typeE', 'typeI'],
               ['typeL', 'typeM']);
         });

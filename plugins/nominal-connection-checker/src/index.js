@@ -491,13 +491,13 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     const outputBinding = this.getConnectionTypes_(
         block.outputConnection, genericType);
     if (outputBinding.length &&
-        outputBinding[0].equals(STANDARD_GENERIC)) {
+        !outputBinding[0].equals(STANDARD_GENERIC)) {
       return false;
     }
     const previousBinding = this.getConnectionTypes_(
         block.previousConnection, genericType);
     if (previousBinding.length &&
-        previousBinding[0].equals(STANDARD_GENERIC)) {
+        !previousBinding[0].equals(STANDARD_GENERIC)) {
       return false;
     }
     return true;
