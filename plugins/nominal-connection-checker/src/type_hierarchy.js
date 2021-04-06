@@ -117,7 +117,7 @@ export class TypeHierarchy {
   initBasicInfo_(hierarchyDef) {
     for (const typeName of Object.keys(hierarchyDef)) {
       const lowerCaseName = typeName.toLowerCase();
-      const type = new TypeDef(lowerCaseName);
+      const type = new TypeDef(lowerCaseName, this.isGeneric_);
       const info = hierarchyDef[typeName];
       if (info.params && info.params.length) {
         info.params.forEach((param) => {
@@ -829,14 +829,25 @@ class TypeDef {
    * Constructs a TypeDef with the given name. Uses the hierarchy for further
    * initialization (eg defining supertypes).
    * @param {string} name The name of the type.
+   * @param {function(string):boolean} isGenericFn Returns true if the given
+   *     string represents a generic type. All strings which are not generic are
+   *     considered to be explicit (this function partitions the set of all
+   *     strings into generic types and explicit types).
    */
-  constructor(name) {
+  constructor(name, isGenericFn) {
     /**
      * The name of this type.
      * @type {string}
      * @public
      */
     this.name = name.toLowerCase();
+
+    /**
+     * Returns true if the given string is generic. False if it is explicit.
+     * @type {function(string): boolean}
+     * @private
+     */
+    this.isGeneric_ = isGenericFn;
 
     /**
      * The caseless names of the direct supertypes of this type.
