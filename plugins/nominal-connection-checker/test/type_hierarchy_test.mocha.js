@@ -2169,6 +2169,82 @@ suite('TypeHierarchy', function() {
             this.hierarchy, 'typeA[typeB]', 'typeA[typeB, typeB]');
       });
     });
+
+    suite('Generics', function() {
+      setup(function() {
+        this.hierarchy = this.createTypeHierarchy({
+          'typeA': { },
+        });
+      });
+
+      test('First generic', function() {
+        this.assertMatch(this.hierarchy, 't', 'typeA');
+      });
+
+      test('Second generic', function() {
+        this.assertMatch(this.hierarchy, 'typeA', 't');
+      });
+
+      test('Both generic', function() {
+        this.assertMatch(this.hierarchy, 't', 'g');
+      });
+    });
+
+    suite('Generic params', function() {
+      setup(function() {
+        this.hierarchy = this.createTypeHierarchy({
+          'typeA': {
+            'params': [
+              {
+                'name': 'A',
+                'variance': 'co',
+              },
+            ],
+          },
+          'typeB': {
+            'params': [
+              {
+                'name': 'A',
+                'variance': 'co',
+              },
+              {
+                'name': 'B',
+                'variance': 'co',
+              },
+            ],
+          },
+          'typeC': { },
+        });
+      });
+
+      test('Pure generic w/ params', function() {
+        this.assertMatch(this.hierarchy, 't', 'typeA[typeC]');
+      });
+
+      test('Pure generic w/ generic params', function() {
+        this.assertMatch(this.hierarchy, 't', 'typeA[t]');
+      });
+
+      test('First generic', function() {
+        this.assertMatch(this.hierarchy, 'typeA[t]', 'typeA[typeC]');
+      });
+
+      test('Second generic', function() {
+        this.assertMatch(this.hierarchy, 'typeA[typeC]', 'typeA[t]');
+      });
+
+      test('Both generic', function() {
+        this.assertMatch(this.hierarchy, 'typeA[t]', 'typeA[t]');
+      });
+
+      test('Same param generic', function() {
+        this.assertMatch(this.hierarchy, 'typeB[t, typeC]', 'typeB[t, typeC]');
+      });
+
+      test('Different params generic', function() {
+        this.assertMatch(this.hierarchy, 'typeB[t, typeC]', 'typeB[typeC, t]');
+      });
+    });
   });
 
   suite('typeFulfillsType', function() {
@@ -3409,78 +3485,198 @@ suite('TypeHierarchy', function() {
       });
     });
 
+    suite('Generics', function() {
+      setup(function() {
+        this.hierarchy = this.createTypeHierarchy({
+          'typeA': { },
+        });
+      });
+
+      test('Super generic', function() {
+        this.assertFulfills(this.hierarchy, 'typeA', 't');
+      });
+
+      test('Sub generic', function() {
+        this.assertFulfills(this.hierarchy, 't', 'typeA');
+      });
+
+      test('Both generic', function() {
+        this.assertFulfills(this.hierarchy, 't', 'g');
+      });
+    });
+
     suite('Generic params', function() {
-      suite('Single param', function() {
-        suite('Covariant', function() {
-          setup(function() {
-            this.hierarchy = this.createTypeHierarchy({
-              'typeA': {
-                'params': [
-                  {
-                    'name': 'A',
-                    'variance': 'co',
-                  },
-                ],
-              },
-              'typeB': {},
-            });
-          });
-
-          test('Super generic', function() {
-            this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
-          });
-
-          test('Sub generic', function() {
-            this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
-          });
-        });
-
-        suite('Contravariant', function() {
-          setup(function() {
-            this.hierarchy = this.createTypeHierarchy({
-              'typeA': {
-                'params': [
-                  {
-                    'name': 'A',
-                    'variance': 'contra',
-                  },
-                ],
-              },
-              'typeB': {},
-            });
-          });
-
-          test('Super generic', function() {
-            this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
-          });
-
-          test('Sub generic', function() {
-            this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
+      suite('Covariant', function() {
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'co',
+                },
+              ],
+            },
+            'typeB': {},
+            'typeC': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'co',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'co',
+                },
+              ],
+            },
           });
         });
 
-        suite('Invariant', function() {
-          setup(function() {
-            this.hierarchy = this.createTypeHierarchy({
-              'typeA': {
-                'params': [
-                  {
-                    'name': 'A',
-                    'variance': 'inv',
-                  },
-                ],
-              },
-              'typeB': {},
-            });
-          });
+        test('Pure generic w/ params', function() {
+          this.assertFulfills(this.hierarchy, 't', 'typeA[typeB]');
+        });
 
-          test('Super generic', function() {
-            this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
-          });
+        test('Pure generic w/ generic params', function() {
+          this.assertFulfills(this.hierarchy, 't', 'typeA[A]');
+        });
 
-          test('Sub generic', function() {
-            this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
+        test('Super generic', function() {
+          this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
+        });
+
+        test('Sub generic', function() {
+          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
+        });
+
+        test('Both generic', function() {
+          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[B]');
+        });
+
+        test('Same param generic', function() {
+          this.assertFulfills(
+              this.hierarchy, 'typeC[t, typeB]', 'typeC[g, typeB]');
+        });
+
+        test('Different params generic', function() {
+          this.assertFulfills(
+              this.hierarchy, 'typeC[t, typeB]', 'typeC[typeB, g]');
+        });
+      });
+
+      suite('Contravariant', function() {
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'contra',
+                },
+              ],
+            },
+            'typeB': {},
+            'typeC': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'contra',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'contra',
+                },
+              ],
+            },
           });
+        });
+
+        test('Pure generic w/ params', function() {
+          this.assertFulfills(this.hierarchy, 't', 'typeA[typeB]');
+        });
+
+        test('Pure generic w/ generic params', function() {
+          this.assertFulfills(this.hierarchy, 't', 'typeA[A]');
+        });
+
+        test('Super generic', function() {
+          this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
+        });
+
+        test('Sub generic', function() {
+          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
+        });
+
+        test('Both generic', function() {
+          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[B]');
+        });
+
+        test('Same param generic', function() {
+          this.assertFulfills(
+              this.hierarchy, 'typeC[t, typeB]', 'typeC[g, typeB]');
+        });
+
+        test('Different params generic', function() {
+          this.assertFulfills(
+              this.hierarchy, 'typeC[t, typeB]', 'typeC[typeB, g]');
+        });
+      });
+
+      suite('Invariant', function() {
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {},
+            'typeC': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+          });
+        });
+
+        test('Pure generic w/ params', function() {
+          this.assertFulfills(this.hierarchy, 't', 'typeA[typeB]');
+        });
+
+        test('Pure generic w/ generic params', function() {
+          this.assertFulfills(this.hierarchy, 't', 'typeA[A]');
+        });
+
+        test('Super generic', function() {
+          this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
+        });
+
+        test('Sub generic', function() {
+          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
+        });
+
+        test('Both generic', function() {
+          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[B]');
+        });
+
+        test('Same param generic', function() {
+          this.assertFulfills(
+              this.hierarchy, 'typeC[t, typeB]', 'typeC[g, typeB]');
+        });
+
+        test('Different params generic', function() {
+          this.assertFulfills(
+              this.hierarchy, 'typeC[t, typeB]', 'typeC[typeB, g]');
         });
       });
     });
@@ -3838,28 +4034,28 @@ suite('TypeHierarchy', function() {
 
       test('Unify greatgrandparent and opt grandparent ' +
           '(inverse 1st cousin once removed)',
-      function() {
-        const hierarchy = this.createTypeHierarchy({
-          'typeG': { },
-          'typeF': { },
-          'typeE': {
-            'fulfills': ['typeG'],
-          },
-          'typeD': {
-            'fulfills': ['typef'],
-          },
-          'typeC': {
-            'fulfills': ['typeE'],
-          },
-          'typeB': {
-            'fulfills': ['typeD'],
-          },
-          'typeA': {
-            'fulfills': ['typeB', 'typeC'],
-          },
-        });
-        this.assertNoNearestCommonParents(hierarchy, ['typeD', 'typeG']);
-      });
+          function() {
+            const hierarchy = this.createTypeHierarchy({
+              'typeG': { },
+              'typeF': { },
+              'typeE': {
+                'fulfills': ['typeG'],
+              },
+              'typeD': {
+                'fulfills': ['typef'],
+              },
+              'typeC': {
+                'fulfills': ['typeE'],
+              },
+              'typeB': {
+                'fulfills': ['typeD'],
+              },
+              'typeA': {
+                'fulfills': ['typeB', 'typeC'],
+              },
+            });
+            this.assertNoNearestCommonParents(hierarchy, ['typeD', 'typeG']);
+          });
 
       test('Unify parent and opt grandparent (inverse nibling)', function() {
         const hierarchy = this.createTypeHierarchy({

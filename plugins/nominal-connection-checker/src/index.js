@@ -144,10 +144,10 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   getExplicitTypes(block, genericType) {
     try {
       const types = this.getBoundTypes_(block, genericType.toLowerCase());
-      if (types[0] == STANDARD_GENERIC_TYPE) {
+      if (types[0].equals(STANDARD_GENERIC)) {
         return [];
       }
-      return types;
+      return types.map((type) => structureToString(type));
     } catch (e) {
       throw new ConnectionCheckError(
           'Trying to find the explicit types of ' + genericType + ' on block ' +
@@ -195,8 +195,6 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   getExplicitTypesOfConnectionInternal_(connection) {
     const struct = parseType(getCheck(connection));
     return this.getExplicitVersionsOfType_(connection.getSourceBlock(), struct);
-    // return isExplicitConnection(connection) ? [check]:
-    //     this.getBoundTypes_(connection.getSourceBlock(), check);
   }
 
   /**
@@ -320,27 +318,22 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    */
   getExplicitVersionsOfType_(
       block, struct, connectionToSkip = undefined) {
-    const names = isGeneric(struct.name) ?
-        this.getBoundTypes_(block, struct.name, connectionToSkip):
-        [struct.name];
-    return names
-        .map((name) => {
-          if (!struct.params.length) {
-            return [new TypeStructure(name)];
-          }
-          const paramsLists = struct.params.map((param) =>
-            this.getExplicitVersionsOfType_(block, param, connectionToSkip));
-          paramsLists[0] = paramsLists[0].map((val) => [val]);
-          const combos = combine(paramsLists);
-          return combos.map((combo) => {
-            const struct = new TypeStructure(name);
-            struct.params = combo;
-            return struct;
-          });
-        })
-        .reduce((flat, toFlatten) => {
-          return [...flat, ...toFlatten];
-        }, []);
+    if (isGeneric(struct.name)) {
+      return this.getBoundTypes_(block, struct.name, connectionToSkip);
+    }
+    if (!struct.params.length) {
+      return [struct];
+    }
+
+    const paramsLists = struct.params.map((param) =>
+      this.getExplicitVersionsOfType_(block, param, connectionToSkip));
+    paramsLists[0] = paramsLists[0].map((val) => [val]);
+    const combos = combine(paramsLists);
+    return combos.map((combo) => {
+      const newStruct = new TypeStructure(struct.name);
+      newStruct.params = combo;
+      return newStruct;
+    });
   }
 
   /**
@@ -356,8 +349,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    *     explicit type of.
    * @param {!Blockly.Connection=} connectionToSkip The connection to skip. If
    *     the connection matches this connection, it will be ignored.
-   * @return {!Array<string>} The explicit type(s) bound to the generic type,
-   *     if one exists.
+   * @return {!Array<!TypeStructure>} The explicit type(s) bound to the generic
+   *     type, if one exists.
    * @private
    */
   getBoundTypes_(block, genericType, connectionToSkip = undefined) {
@@ -367,7 +360,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     const type = this.getExternalBinding_(block, genericType);
     if (type) {
       // TODO: Evaluate generics in bound types.
-      return [type];
+      return [new TypeStructure(type)];
     }
 
     types.push(...this.getConnectionTypes_(
@@ -383,10 +376,9 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
 
     if (types.length) {
       return this.getTypeHierarchy_()
-          .getNearestCommonParents(...types)
-          .map((typeStruct) => structureToString(typeStruct));
+          .getNearestCommonParents(...types);
     }
-    return [STANDARD_GENERIC_TYPE];
+    return [STANDARD_GENERIC];
   }
 
   /**

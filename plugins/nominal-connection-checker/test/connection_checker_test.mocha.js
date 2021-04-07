@@ -852,32 +852,70 @@ suite('NominalConnectionChecker', function() {
     });
 
     suite('Parameters', function() {
+      setup(function() {
+        this.genericParamBlocks = [];
+        this.genericParamBlocks.push(
+            ...createMainBlockDefs('typetolist', 'list[t]', 't'));
+        Blockly.defineBlocksWithJsonArray(this.genericParamBlocks);
+      });
+
+      teardown(function() {
+        for (const block of this.genericParamBlocks) {
+          delete Blockly.Blocks[block.type];
+        }
+      });
+
       clearTwoBlockTests();
 
-      twoBlockTest('T = List[Dog]', function() {
-        const tOut = this.getInnerOutput('t');
-        this.bindConnection(tOut, 'list[dog]');
-        this.assertHasType(tOut, 'list[dog]');
+      twoBlockTest('T = List[Dog], explicit', function() {
+        const tIn = this.getOuterInput('t');
+        const listDogOut = this.getInnerOutput('list[dog]');
+        tIn.connect(listDogOut);
+        this.assertHasType(tIn, 'list[dog]');
       });
 
-      twoBlockTest('T = List[G]', function() {
-        const tOut = this.getInnerOutput('t');
-        this.bindConnection(tOut, 'list[g]');
-        this.assertHasType(tOut, 'list[g]');
+      twoBlockTest('T = List[Dog], bound', function() {
+        const tIn = this.getOuterInput('t');
+        this.bindConnection(tIn, 'list[dog]');
+        this.assertHasType(tIn, 'list[dog]');
       });
 
-      twoBlockTest('List[T] Unbound', function() {
-        const tOut = this.getInnerOutput('list[t]');
-        this.assertNoType(tOut);
+      twoBlockTest('T = List[G], explicit', function() {
+        const tIn = this.getOuterInput('t');
+        const listTOut = this.getInnerOutput('list[t]');
+        tIn.connect(listTOut);
+        this.assertHasType(tIn, 'list[*]');
       });
 
-      twoBlockTest('List[T], T = Dog', function() {
-        const tOut = this.getInnerOutput('list[t]');
-        this.bindConnection(tOut, 'dog');
-        this.assertHasType(tOut, 'dog');
+      twoBlockTest.skip('T = List[G], bound', function() {
+        const tIn = this.getOuterInput('t');
+        this.bindConnection(tIn, 'list[t]');
+        this.assertHasType(tIn, 'list[*]');
       });
 
       runTwoBlockTests();
+
+      clearThreeBlockTests();
+
+      threeBlockTest('List[T] Unbound', function() {
+        const t = this.getMain('list[t]');
+        this.assertNoType(t.in);
+      });
+
+      threeBlockTest('List[T], T = Dog, explicit', function() {
+        const t = this.getMain('typetolist');
+        const dogOut = this.getInnerOutput('dog');
+        t.in.connect(dogOut);
+        this.assertHasType(t.in, 'dog');
+      });
+
+      threeBlockTest('List[T], T = Dog, bound', function() {
+        const t = this.getMain('typetolist');
+        this.bindConnection(t.in, 'dog');
+        this.assertHasType(t.in, 'dog');
+      });
+
+      runThreeBlockTests();
     });
 
     suite('Flow through connections', function() {
