@@ -518,6 +518,7 @@ export class TypeHierarchy {
   /**
    * Returns an array of the subtype's parameters, reordered to match the order
    * of its ancestor.
+   * This assumes that the given sub-ancestor relationship is correct.
    * @param {!TypeStructure} ancestorType The ancestor type we want to put the
    *     subtype's params in the order of.
    * @param {!TypeStructure} subType The subtype we want to reorder the params
@@ -526,7 +527,7 @@ export class TypeHierarchy {
    *     subtype.
    */
   reorganizeTypeForAncestor(ancestorType, subType) {
-    if (this.isGeneric_(ancestorType.name)) {
+    if (this.isGeneric_(ancestorType.name) || this.isGeneric_(subType.name)) {
       return subType;
     }
 
@@ -546,7 +547,11 @@ export class TypeHierarchy {
         case Variance.CO:
           return this.reorganizeTypeForAncestor(ancestorParam, subParam);
         case Variance.CONTRA:
-          return this.reorganizeTypeForAncestor(subParam, ancestorParam);
+          // eslint-disable-next-line no-case-declarations
+          const newParam = new TypeStructure(subParam.name);
+          newParam.params =
+              this.reorganizeTypeForAncestor(subParam, ancestorParam).params;
+          return newParam;
         case Variance.INV:
           // Could return sub or ancestor, because they are identical.
           return subParam;

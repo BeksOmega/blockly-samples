@@ -16,7 +16,7 @@ import {
   getCheck,
   isGeneric,
   isGenericConnection,
-  combine, STANDARD_GENERIC, STANDARD_GENERIC_TYPE,
+  combine, STANDARD_GENERIC,
 } from './utils';
 
 
@@ -72,16 +72,16 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    * @override
    */
   doTypeChecks(a, b) {
-    try {
+    // try {
       return this.doTypeChecksInternal_(a, b);
-    } catch (e) {
-      throw new ConnectionCheckError(
-          'Checking the compatibility of the ' + this.getInputName_(a) +
-          ' and ' + this.getInputName_(b) + ' connections on blocks ' +
-          a.getSourceBlock().toDevString() + ' and ' +
-          b.getSourceBlock().toDevString() + ' threw an error. ' +
-          'Error: ' + e.message, e);
-    }
+    // } catch (e) {
+    //   throw new ConnectionCheckError(
+    //       'Checking the compatibility of the ' + this.getInputName_(a) +
+    //       ' and ' + this.getInputName_(b) + ' connections on blocks ' +
+    //       a.getSourceBlock().toDevString() + ' and ' +
+    //       b.getSourceBlock().toDevString() + ' threw an error. ' +
+    //       'Error: ' + e.message, e);
+    // }
   }
 
   /**
