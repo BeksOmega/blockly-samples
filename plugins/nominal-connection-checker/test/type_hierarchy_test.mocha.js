@@ -3517,8 +3517,7 @@ suite('TypeHierarchy', function() {
                 },
               ],
             },
-            'typeB': {},
-            'typeC': {
+            'typeB': {
               'params': [
                 {
                   'name': 'A',
@@ -3530,11 +3529,15 @@ suite('TypeHierarchy', function() {
                 },
               ],
             },
+            'typeC': {},
+            'typeD': {
+              'fulfills': ['typeC'],
+            },
           });
         });
 
         test('Pure generic w/ params', function() {
-          this.assertFulfills(this.hierarchy, 't', 'typeA[typeB]');
+          this.assertFulfills(this.hierarchy, 't', 'typeA[typeC]');
         });
 
         test('Pure generic w/ generic params', function() {
@@ -3542,11 +3545,11 @@ suite('TypeHierarchy', function() {
         });
 
         test('Super generic', function() {
-          this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
+          this.assertFulfills(this.hierarchy, 'typeA[typeC]', 'typeA[A]');
         });
 
         test('Sub generic', function() {
-          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
+          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeC]');
         });
 
         test('Both generic', function() {
@@ -3555,12 +3558,12 @@ suite('TypeHierarchy', function() {
 
         test('Same param generic', function() {
           this.assertFulfills(
-              this.hierarchy, 'typeC[t, typeB]', 'typeC[g, typeB]');
+              this.hierarchy, 'typeB[t, typeD]', 'typeB[g, typeC]');
         });
 
         test('Different params generic', function() {
           this.assertFulfills(
-              this.hierarchy, 'typeC[t, typeB]', 'typeC[typeB, g]');
+              this.hierarchy, 'typeB[t, typeC]', 'typeB[typeC, g]');
         });
       });
 
@@ -3575,8 +3578,7 @@ suite('TypeHierarchy', function() {
                 },
               ],
             },
-            'typeB': {},
-            'typeC': {
+            'typeB': {
               'params': [
                 {
                   'name': 'A',
@@ -3588,11 +3590,15 @@ suite('TypeHierarchy', function() {
                 },
               ],
             },
+            'typeC': {},
+            'typeD': {
+              'fulfills': ['typeC'],
+            },
           });
         });
 
         test('Pure generic w/ params', function() {
-          this.assertFulfills(this.hierarchy, 't', 'typeA[typeB]');
+          this.assertFulfills(this.hierarchy, 't', 'typeA[typeC]');
         });
 
         test('Pure generic w/ generic params', function() {
@@ -3600,11 +3606,11 @@ suite('TypeHierarchy', function() {
         });
 
         test('Super generic', function() {
-          this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
+          this.assertFulfills(this.hierarchy, 'typeA[typeC]', 'typeA[A]');
         });
 
         test('Sub generic', function() {
-          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
+          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeC]');
         });
 
         test('Both generic', function() {
@@ -3613,12 +3619,12 @@ suite('TypeHierarchy', function() {
 
         test('Same param generic', function() {
           this.assertFulfills(
-              this.hierarchy, 'typeC[t, typeB]', 'typeC[g, typeB]');
+              this.hierarchy, 'typeB[t, typeC]', 'typeB[g, typeD]');
         });
 
         test('Different params generic', function() {
           this.assertFulfills(
-              this.hierarchy, 'typeC[t, typeB]', 'typeC[typeB, g]');
+              this.hierarchy, 'typeB[t, typeC]', 'typeB[typeC, g]');
         });
       });
 
@@ -3633,8 +3639,7 @@ suite('TypeHierarchy', function() {
                 },
               ],
             },
-            'typeB': {},
-            'typeC': {
+            'typeB': {
               'params': [
                 {
                   'name': 'A',
@@ -3646,11 +3651,12 @@ suite('TypeHierarchy', function() {
                 },
               ],
             },
+            'typeC': {},
           });
         });
 
         test('Pure generic w/ params', function() {
-          this.assertFulfills(this.hierarchy, 't', 'typeA[typeB]');
+          this.assertFulfills(this.hierarchy, 't', 'typeA[typeC]');
         });
 
         test('Pure generic w/ generic params', function() {
@@ -3658,11 +3664,11 @@ suite('TypeHierarchy', function() {
         });
 
         test('Super generic', function() {
-          this.assertFulfills(this.hierarchy, 'typeA[typeB]', 'typeA[A]');
+          this.assertFulfills(this.hierarchy, 'typeA[typeC]', 'typeA[A]');
         });
 
         test('Sub generic', function() {
-          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeB]');
+          this.assertFulfills(this.hierarchy, 'typeA[A]', 'typeA[typeC]');
         });
 
         test('Both generic', function() {
@@ -3671,12 +3677,12 @@ suite('TypeHierarchy', function() {
 
         test('Same param generic', function() {
           this.assertFulfills(
-              this.hierarchy, 'typeC[t, typeB]', 'typeC[g, typeB]');
+              this.hierarchy, 'typeB[t, typeC]', 'typeB[g, typeC]');
         });
 
         test('Different params generic', function() {
           this.assertFulfills(
-              this.hierarchy, 'typeC[t, typeB]', 'typeC[typeB, g]');
+              this.hierarchy, 'typeB[t, typeC]', 'typeB[typeC, g]');
         });
       });
     });
@@ -4034,28 +4040,28 @@ suite('TypeHierarchy', function() {
 
       test('Unify greatgrandparent and opt grandparent ' +
           '(inverse 1st cousin once removed)',
-          function() {
-            const hierarchy = this.createTypeHierarchy({
-              'typeG': { },
-              'typeF': { },
-              'typeE': {
-                'fulfills': ['typeG'],
-              },
-              'typeD': {
-                'fulfills': ['typef'],
-              },
-              'typeC': {
-                'fulfills': ['typeE'],
-              },
-              'typeB': {
-                'fulfills': ['typeD'],
-              },
-              'typeA': {
-                'fulfills': ['typeB', 'typeC'],
-              },
-            });
-            this.assertNoNearestCommonParents(hierarchy, ['typeD', 'typeG']);
-          });
+      function() {
+        const hierarchy = this.createTypeHierarchy({
+          'typeG': { },
+          'typeF': { },
+          'typeE': {
+            'fulfills': ['typeG'],
+          },
+          'typeD': {
+            'fulfills': ['typef'],
+          },
+          'typeC': {
+            'fulfills': ['typeE'],
+          },
+          'typeB': {
+            'fulfills': ['typeD'],
+          },
+          'typeA': {
+            'fulfills': ['typeB', 'typeC'],
+          },
+        });
+        this.assertNoNearestCommonParents(hierarchy, ['typeD', 'typeG']);
+      });
 
       test('Unify parent and opt grandparent (inverse nibling)', function() {
         const hierarchy = this.createTypeHierarchy({
@@ -6949,77 +6955,321 @@ suite('TypeHierarchy', function() {
       });
 
       suite('Outer types not unifying', function() {
-        suite('Explicit types', function() {
-          test('Non-explicit parent', function() {
-            const hierarchy = this.createTypeHierarchy({
-              'typeA': {
-                'params': [
-                  {
-                    'name': 'A',
-                    'variance': 'inv',
-                  },
-                  {
-                    'name': 'B',
-                    'variance': 'inv',
-                  },
-                ],
-              },
-              'typeB': { },
-              'typeC': {
-                'fulfills': ['typeA[typeB, A]'],
-                'params': [
-                  {
-                    'name': 'A',
-                    'variance': 'inv',
-                  },
-                ],
-              },
-              'typeD': { },
-            });
-            this.assertNoNearestCommonParents(
-                hierarchy,
-                ['typeC[typeD]', 'typeA[typeD, typeD]']);
+        test('Non-explicit parent', function() {
+          const hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': { },
+            'typeC': {
+              'fulfills': ['typeA[typeB, A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeD': { },
           });
+          this.assertNoNearestCommonParents(
+              hierarchy,
+              ['typeC[typeD]', 'typeA[typeD, typeD]']);
+        });
 
-          test('Explicit sibling', function() {
-            const hierarchy = this.createTypeHierarchy({
-              'typeA': {
-                'params': [
-                  {
-                    'name': 'A',
-                    'variance': 'inv',
-                  },
-                  {
-                    'name': 'B',
-                    'variance': 'inv',
-                  },
-                ],
-              },
-              'typeB': { },
-              'typeC': {
-                'fulfills': ['typeA[typeB, A]'],
-                'params': [
-                  {
-                    'name': 'A',
-                    'variance': 'inv',
-                  },
-                ],
-              },
-              'typeD': {
-                'fulfills': ['typeA[A, typeB]'],
-                'params': [
-                  {
-                    'name': 'A',
-                    'variance': 'inv',
-                  },
-                ],
-              },
-              'typeE': { },
-            });
-            this.assertNoNearestCommonParents(
-                hierarchy,
-                ['typeC[typeE]', 'typeD[typeE]']);
+        test('Explicit sibling', function() {
+          const hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': { },
+            'typeC': {
+              'fulfills': ['typeA[typeB, A]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeD': {
+              'fulfills': ['typeA[A, typeB]'],
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeE': { },
           });
+          this.assertNoNearestCommonParents(
+              hierarchy,
+              ['typeC[typeE]', 'typeD[typeE]']);
+        });
+
+        test('No common ancestor', function() {
+          const hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': { },
+          });
+          this.assertNoNearestCommonParents(
+              hierarchy,
+              ['typeA[typeC]', 'typeB[typeC]']);
+        });
+      });
+    });
+
+    suite('Generics', function() {
+      test('One generic', function() {
+        const hierarchy = this.createTypeHierarchy({
+          'typeA': { },
+        });
+        this.assertNearestCommonParents(
+            hierarchy, ['typeA', 't'], ['typeA']);
+      });
+
+      test('Multiple generics', function() {
+        const hierarchy = this.createTypeHierarchy({
+          'typeA': { },
+        });
+        this.assertNearestCommonParents(
+            hierarchy, ['g', 'i', 'typeA', 't'], ['typeA']);
+      });
+
+      test('Multiple generics w/ unification', function() {
+        const hierarchy = this.createTypeHierarchy({
+          'typeA': { },
+          'typeB': {
+            'fulfills': ['typeA'],
+          },
+          'typeC': {
+            'fulfills': ['typeA'],
+          },
+        });
+        this.assertNearestCommonParents(
+            hierarchy, ['g', 'i', 'typeB', 'typeC', 't'], ['typeA']);
+      });
+
+      test('All generics', function() {
+        const hierarchy = this.createTypeHierarchy({ });
+        this.assertNearestCommonParents(
+            hierarchy, ['g', 'i', 't'], ['*']);
+      });
+    });
+
+    suite('Generic params', function() {
+      suite('Covariant', function() {
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'co',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'co',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'co',
+                },
+              ],
+            },
+            'typeC': {},
+            'typeD': {
+              'fulfills': ['typeC'],
+            },
+            'typeE': {
+              'fulfills': ['typeC'],
+            },
+          });
+        });
+
+        test('Pure generic w/ params', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy, ['t', 'typeA[typeC]'], ['typeA[typeC]']);
+        });
+
+        test('Pure generic w/ generic params', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy, ['t', 'typeA[g]'], ['typeA[*]']);
+        });
+
+        test('Same param generic', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy,
+              ['typeB[a, typeD]', 'typeB[b, typeE]'],
+              ['typeB[*, typeC]']);
+        });
+
+        test('Different params generic', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy,
+              ['typeB[a, typeD]', 'typeB[typeE, b]'],
+              ['typeB[typeE, typeD]']);
+        });
+
+        test('No common outer', function() {
+          this.assertNoNearestCommonParents(
+              this.hierarchy, ['typeA[a]', 'typeB[a, b]']);
+        });
+      });
+
+      suite('Contravariant', function() {
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'contra',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'contra',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'contra',
+                },
+              ],
+            },
+            'typeC': {},
+            'typeD': {},
+            'typeE': {
+              'fulfills': ['typeC', 'typeD'],
+            },
+          });
+        });
+
+        test('Pure generic w/ params', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy, ['t', 'typeA[typeC]'], ['typeA[typeC]']);
+        });
+
+        test('Pure generic w/ generic params', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy, ['t', 'typeA[g]'], ['typeA[*]']);
+        });
+
+        test('Same param generic', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy,
+              ['typeB[a, typeC]', 'typeB[b, typeD]'],
+              ['typeB[*, typeE]']);
+        });
+
+        test('Different params generic', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy,
+              ['typeB[a, typeC]', 'typeB[typeD, b]'],
+              ['typeB[typeD, typeC]']);
+        });
+
+        test('No common outer', function() {
+          this.assertNoNearestCommonParents(
+              this.hierarchy, ['typeA[a]', 'typeB[a, b]']);
+        });
+      });
+
+      suite('Invariant', function() {
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': {},
+          });
+        });
+
+        test('Pure generic w/ params', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy, ['t', 'typeA[typeC]'], ['typeA[typeC]']);
+        });
+
+        test('Pure generic w/ generic params', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy, ['t', 'typeA[g]'], ['typeA[*]']);
+        });
+
+        test('Same param generic', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy,
+              ['typeB[a, typeC]', 'typeB[b, typeC]'],
+              ['typeB[*, typeC]']);
+        });
+
+        test('Different params generic', function() {
+          this.assertNearestCommonParents(
+              this.hierarchy,
+              ['typeB[a, typeC]', 'typeB[typeC, b]'],
+              ['typeB[typeC, typeC]']);
+        });
+
+        test('No common outer', function() {
+          this.assertNoNearestCommonParents(
+              this.hierarchy, ['typeA[a]', 'typeB[a, b]']);
         });
       });
     });
@@ -10430,6 +10680,31 @@ suite('TypeHierarchy', function() {
           });
         });
 
+        test('No common descendant', function() {
+          const hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': { },
+          });
+          this.assertNoNearestCommonDescendants(
+              hierarchy,
+              ['typeA[typeC]', 'typeB[typeC]']);
+        });
+
         test('Covariant and contravariant not unifying to invariant',
             function() {
               const hierarchy = this.createTypeHierarchy({
@@ -10472,6 +10747,225 @@ suite('TypeHierarchy', function() {
               this.assertNoNearestCommonDescendants(
                   hierarchy, ['typeA[typeE]', 'typeB[typeF]']);
             });
+      });
+    });
+
+    suite('Generics', function() {
+      test('One generic', function() {
+        const hierarchy = this.createTypeHierarchy({
+          'typeA': { },
+        });
+        this.assertNearestCommonDescendants(
+            hierarchy, ['typeA', 't'], ['typeA']);
+      });
+
+      test('Multiple generics', function() {
+        const hierarchy = this.createTypeHierarchy({
+          'typeA': { },
+        });
+        this.assertNearestCommonDescendants(
+            hierarchy, ['g', 'i', 'typeA', 't'], ['typeA']);
+      });
+
+      test('Multiple generics w/ unification', function() {
+        const hierarchy = this.createTypeHierarchy({
+          'typeA': { },
+          'typeB': {},
+          'typeC': {
+            'fulfills': ['typeA', 'typeB'],
+          },
+        });
+        this.assertNearestCommonDescendants(
+            hierarchy, ['g', 'i', 'typeA', 'typeB', 't'], ['typeC']);
+      });
+
+      test('All generics', function() {
+        const hierarchy = this.createTypeHierarchy({ });
+        this.assertNearestCommonDescendants(
+            hierarchy, ['g', 'i', 't'], ['*']);
+      });
+    });
+
+    suite('Generic params', function() {
+      suite('Covariant', function() {
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'co',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'co',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'co',
+                },
+              ],
+            },
+            'typeC': {},
+            'typeD': {},
+            'typeE': {
+              'fulfills': ['typeC', 'typeD'],
+            },
+          });
+        });
+
+        test('Pure generic w/ params', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy, ['t', 'typeA[typeC]'], ['typeA[typeC]']);
+        });
+
+        test('Pure generic w/ generic params', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy, ['t', 'typeA[g]'], ['typeA[*]']);
+        });
+
+        test('Same param generic', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy,
+              ['typeB[a, typeC]', 'typeB[b, typeD]'],
+              ['typeB[*, typeE]']);
+        });
+
+        test('Different params generic', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy,
+              ['typeB[a, typeC]', 'typeB[typeD, b]'],
+              ['typeB[typeD, typeC]']);
+        });
+
+        test('No common outer', function() {
+          this.assertNoNearestCommonDescendants(
+              this.hierarchy, ['typeA[a]', 'typeB[a, b]']);
+        });
+      });
+
+      suite('Contravariant', function() {
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'contra',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'contra',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'contra',
+                },
+              ],
+            },
+            'typeC': {},
+            'typeD': {
+              'fulfills': ['typeC'],
+            },
+            'typeE': {
+              'fulfills': ['typeC'],
+            },
+          });
+        });
+
+        test('Pure generic w/ params', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy, ['t', 'typeA[typeC]'], ['typeA[typeC]']);
+        });
+
+        test('Pure generic w/ generic params', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy, ['t', 'typeA[g]'], ['typeA[*]']);
+        });
+
+        test('Same param generic', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy,
+              ['typeB[a, typeD]', 'typeB[b, typeE]'],
+              ['typeB[*, typeC]']);
+        });
+
+        test('Different params generic', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy,
+              ['typeB[a, typeD]', 'typeB[typeE, b]'],
+              ['typeB[typeE, typeD]']);
+        });
+
+        test('No common outer', function() {
+          this.assertNoNearestCommonDescendants(
+              this.hierarchy, ['typeA[a]', 'typeB[a, b]']);
+        });
+      });
+
+      suite('Invariant', function() {
+        setup(function() {
+          this.hierarchy = this.createTypeHierarchy({
+            'typeA': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeB': {
+              'params': [
+                {
+                  'name': 'A',
+                  'variance': 'inv',
+                },
+                {
+                  'name': 'B',
+                  'variance': 'inv',
+                },
+              ],
+            },
+            'typeC': {},
+          });
+        });
+
+        test('Pure generic w/ params', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy, ['t', 'typeA[typeC]'], ['typeA[typeC]']);
+        });
+
+        test('Pure generic w/ generic params', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy, ['t', 'typeA[g]'], ['typeA[*]']);
+        });
+
+        test('Same param generic', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy,
+              ['typeB[a, typeC]', 'typeB[b, typeC]'],
+              ['typeB[*, typeC]']);
+        });
+
+        test('Different params generic', function() {
+          this.assertNearestCommonDescendants(
+              this.hierarchy,
+              ['typeB[a, typeC]', 'typeB[typeC, b]'],
+              ['typeB[typeC, typeC]']);
+        });
+
+        test('No common outer', function() {
+          this.assertNoNearestCommonDescendants(
+              this.hierarchy, ['typeA[a]', 'typeB[a, b]']);
+        });
       });
     });
   });

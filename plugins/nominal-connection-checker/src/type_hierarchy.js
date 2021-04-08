@@ -419,7 +419,7 @@ export class TypeHierarchy {
         continue;
       }
       const commonDef = this.types_.get(commonType);
-      paramsLists = this.unifyParamsLists(
+      paramsLists = this.unifyParamsLists_(
           paramsLists,
           commonDef,
           this.getNearestCommonParents.bind(this),
@@ -479,6 +479,11 @@ export class TypeHierarchy {
     }
     types.forEach((type) => this.validateTypeStructure_(type));
 
+    types = types.filter((type) => this.isExplicit_(type.name));
+    if (!types.length) { // All types were generic.
+      return [duplicateStructure(this.standardGeneric_)];
+    }
+
     const commonOuterTypes = this.getNearestCommon_(
         types.map((type) => type.name), this.nearestCommonDescendants_);
     // TODO: Filter out any types that do not work for the actual params,
@@ -492,7 +497,7 @@ export class TypeHierarchy {
           if (!paramsLists.length) {
             return [new TypeStructure(commonType)];
           }
-          paramsLists = this.unifyParamsLists(
+          paramsLists = this.unifyParamsLists_(
               paramsLists,
               this.types_.get(commonType),
               this.getNearestCommonDescendants.bind(this),
@@ -662,8 +667,9 @@ export class TypeHierarchy {
    * @return {!Array<!Array<!TypeStructure>>} An array of arrays of common types
    *     for each of the lists of actual types for a given parameter of the
    *     commonDef. An empty subarray means a common type could not be found.
+   * @private
    */
-  unifyParamsLists(
+  unifyParamsLists_(
       paramsLists,
       commonDef,
       covariantRecursion,
@@ -672,13 +678,22 @@ export class TypeHierarchy {
     return paramsLists.map((paramList, i) => {
       switch (commonDef.getParamForIndex(i).variance) {
         case Variance.CO:
+          // Will deal with generics.
           return covariantRecursion(...paramList);
         case Variance.CONTRA:
+          // Will deal with generics.
           return contravariantRecursion(...paramList);
         case Variance.INV:
+          paramList = paramList.filter(
+              (param) => this.isExplicit_(param.name));
+          if (!paramList.length) { // All types were generic.
+            return [duplicateStructure(this.standardGeneric_)];
+          }
+
           // eslint-disable-next-line no-case-declarations
           const [first, ...rest] = paramList;
-          if (rest.every((typeStruct) => typeStruct.equals(first))) {
+          if (rest.every(
+              (typeStruct) => this.typeIsExactlyType(typeStruct, first))) {
             return [first];
           }
           return []; // Empty array means the types do not unify.
