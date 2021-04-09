@@ -31,7 +31,7 @@ export class TypeHierarchy {
    *     strings into generic types and explicit types).
    * @param {!TypeStructure} standardGeneric A type structure representing a
    *     "standard" generic type. This is used to represent unified generic
-   *     types.
+   *     types, as well as non-existant types.
    */
   constructor(hierarchyDef, parseTypeFn, isGenericFn, standardGeneric) {
     /**
@@ -515,55 +515,131 @@ export class TypeHierarchy {
         }, []);
   }
 
-  getMatchingExplicitsInAncestor(generic, source, target) {
-    this.validateTypeStructure_(source);
-    this.validateTypeStructure_(target);
+  /**
+   * Returns an array of the types in the target structure that match instances
+   * of the given generic type in the source structure. These matching types
+   * may be generic or explicit. If the generic matches against an instance of
+   * the standard generic type, that match will not be returned.
+   * @param {!TypeStructure} generic The generic type structure to match
+   *     against.
+   * @param {!TypeStructure} source The type structure to find instances of the
+   *     generic within. Source must be a supertype of target.
+   * @param {!TypeStructure} target The type structure to find matches for the
+   *     generic within. Target must be a subtype of source.
+   * @return {!Array<!TypeStructure>} An array of types in the target structure
+   *     that match instances of the given generic type in the source structure.
+   *     If no matches can be found, an empty array is returned.
+   */
+  getMatchingExplicitsInDescendant(generic, source, target) {
+    return this.getMatchingExplicits_(
+        generic,
+        source,
+        target,
+        (subDef, name, params) =>
+          subDef.getParamsForAncestor(name, params),
+        this.getMatchingExplicitsInDescendant.bind(this),
+        this.getMatchingExplicitsInAncestor.bind(this));
   }
 
   /**
-   * Returns an array of the subtype's parameters, reordered to match the order
-   * of its ancestor.
-   * This assumes that the given sub-ancestor relationship is correct.
-   * @param {!TypeStructure} ancestorType The ancestor type we want to put the
-   *     subtype's params in the order of.
-   * @param {!TypeStructure} subType The subtype we want to reorder the params
-   *     of.
-   * @return {!TypeStructure} A type structure representing the reorganized
-   *     subtype.
+   * Returns an array of the types in the target structure that match instances
+   * of the given generic type in the source structure. These matching types
+   * may be generic or explicit. If the generic matches against an instance of
+   * the standard generic type, that match will not be returned.
+   * @param {!TypeStructure} generic The generic type structure to match
+   *     against.
+   * @param {!TypeStructure} source The type structure to find instances of the
+   *     generic within. Source must be a subtype of target.
+   * @param {!TypeStructure} target The type structure to find matches for the
+   *     generic within. Target must be a supertype of source.
+   * @return {!Array<!TypeStructure>} An array of types in the target structure
+   *     that match instances of the given generic type in the source structure.
+   *     If no matches can be found, an empty array is returned.
    */
-  reorganizeTypeForAncestor(ancestorType, subType) {
-    if (this.isGeneric_(ancestorType.name) || this.isGeneric_(subType.name)) {
-      return subType;
+  getMatchingExplicitsInAncestor(generic, source, target) {
+    return this.getMatchingExplicits_(
+        generic,
+        source,
+        target,
+        this.getParamsForDescendant_.bind(this),
+        this.getMatchingExplicitsInAncestor.bind(this),
+        this.getMatchingExplicitsInDescendant.bind(this));
+  }
+
+  /**
+   * Returns an array of the types in the target structure that match instances
+   * of the given generic type in the source structure. These matching types
+   * may be generic or explicit. If the generic matches against an instance of
+   * the standard generic type, that match will not be returned.
+   * @param {!TypeStructure} generic The generic type structure to match
+   *     against.
+   * @param {!TypeStructure} source The type structure to find instances of the
+   *     generic within. Source must be a subtype of target.
+   * @param {!TypeStructure} target The type structure to find matches for the
+   *     generic within. Target must be a supertype of source.
+   * @param {function(!TypeDef, string, !Array<!TypeStructure>):
+   *     Array<TypeStructure>} reorderParamsFn Returns an array of the given
+   *     set of actual params for the given type def in the order to be
+   *     compatible with the other related type (whose name is passed
+   *     as a string).
+   * @param {function(!TypeStructure, !TypeStructure, !TypeStructure):
+   *     !Array<!TypeStructure>} covariantRecursion The function to call in the
+   *     case of a covariant/invariant parameter.
+   * @param {function(!TypeStructure, !TypeStructure, !TypeStructure):
+   *     !Array<!TypeStructure>} contravariantRecursion The function to call in
+   *     the case of a contravariant parameter.
+   * @return {!Array<!TypeStructure>} An array of types in the target structure
+   *     that match instances of the given generic type in the source structure.
+   *     If no matches can be found, an empty array is returned.
+   */
+  getMatchingExplicits_(
+      generic,
+      source,
+      target,
+      reorderParamsFn,
+      covariantRecursion,
+      contravariantRecursion
+  ) {
+    if (source.equals(generic)) {
+      // Standard generic represents a type that a binding could
+      // not be found for.
+      return target.equals(this.standardGeneric_) ? [] : [target];
+    }
+    if (this.isGeneric_(target.name) || !source.params.length) {
+      return [];
     }
 
-    this.validateTypeStructure_(ancestorType);
-    this.validateTypeStructure_(subType);
+    this.validateTypeStructure_(source);
+    this.validateTypeStructure_(target);
 
-    const subDef = this.types_.get(subType.name);
-    const ancestorDef = this.types_.get(ancestorType.name);
+    const sourceDef = this.types_.get(source.name);
+    const targetDef = this.types_.get(target.name);
 
-    const orderedSubParams = subDef.getParamsForAncestor(
-        ancestorType.name, subType.params);
-    const typeStruct = new TypeStructure(subType.name);
-    typeStruct.params = ancestorType.params.map((ancestorParam, i) => {
-      const subParam = orderedSubParams[i];
-      const paramDef = ancestorDef.getParamForIndex(i);
-      switch (paramDef.variance) {
-        case Variance.CO:
-          return this.reorganizeTypeForAncestor(ancestorParam, subParam);
-        case Variance.CONTRA:
-          // eslint-disable-next-line no-case-declarations
-          const newParam = new TypeStructure(subParam.name);
-          newParam.params =
-              this.reorganizeTypeForAncestor(subParam, ancestorParam).params;
-          return newParam;
-        case Variance.INV:
-          // Could return sub or ancestor, because they are identical.
-          return subParam;
-      }
-    });
-
-    return typeStruct;
+    const orderedParams = reorderParamsFn(
+        targetDef, source.name, target.params);
+    return source.params
+        .reduce((accumulator, param, i) => {
+          const subParam = orderedParams[i];
+          const paramDef = sourceDef.getParamForIndex(i);
+          switch (paramDef.variance) {
+            // For invariant the params are identical, so it doesn't matter
+            // which function we call.
+            case Variance.INV:
+            case Variance.CO:
+              return [
+                ...accumulator,
+                ...covariantRecursion(generic, param, subParam)];
+            case Variance.CONTRA:
+              return [
+                ...accumulator,
+                ...contravariantRecursion(generic, param, subParam)];
+          }
+        }, [])
+        // Remove duplicates.
+        .filter((typeStruct1, i, arrays) => {
+          return arrays.findIndex(
+              (typeStruct2) => typeStruct2.equals(typeStruct1)) == i;
+        });
   }
 
   /**
@@ -645,9 +721,9 @@ export class TypeHierarchy {
       const mappedParams = getParamsForCommon(
           this.types_.get(typeStruct.name), commonType, typeStruct.params);
       mappedParams.forEach((param, i) => {
-        // TODO: This doesn't work if they all evaluate to null!
-        if (!param) {
-          // Just ignore nulls, we don't have type info for these params.
+        // TODO: This doesn't work if they all evaluate to the standard!
+        if (param.equals(this.standardGeneric_)) {
+          // We don't have type info for these params, just ignore them.
           return;
         }
         if (!paramsLists[i]) {
@@ -722,16 +798,18 @@ export class TypeHierarchy {
    *     to get the params in the order of.
    * @param {!Array<!TypeStructure>} actualParams The actual parameters to the
    *     type.
-   * @return {Array<TypeStructure?>} The actualParams put in the order of the
+   * @return {Array<!TypeStructure>} The actualParams put in the order of the
    *     descendant's params, or null if no valid mapping can be found. If
    *     the given type does not have a parameter for a parameter of the
-   *     descendant, the element at that parameter's index will be null.
+   *     descendant, the element at that parameter's index will be the standard
+   *     generic type.
    * @private
    */
   getParamsForDescendant_(type, descendantName, actualParams) {
     const descendantDef = this.types_.get(descendantName);
     const descendantToThis = descendantDef.getParamsForAncestor(type.name);
-    const replacedParams = descendantDef.params().map((_) => null);
+    const replacedParams = descendantDef.params().map((_) =>
+      duplicateStructure(this.standardGeneric_));
 
     const mapTypes = (formalParams, actualParams) => {
       // formalParams and actualParams should always have the same length due
@@ -741,7 +819,8 @@ export class TypeHierarchy {
         if (this.isGeneric_(formalParam.name)) {
           const descParamInd = descendantDef.getIndexOfParam(formalParam.name);
           const currParam = replacedParams[descParamInd];
-          if (currParam != null && !currParam.equals(actualParam)) {
+          if (!currParam.equals(this.standardGeneric_) &&
+              !currParam.equals(actualParam)) {
             return false;
           }
           replacedParams[descParamInd] = duplicateStructure(actualParam);
