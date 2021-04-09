@@ -515,6 +515,11 @@ export class TypeHierarchy {
         }, []);
   }
 
+  getMatchingExplicitsInAncestor(generic, source, target) {
+    this.validateTypeStructure_(source);
+    this.validateTypeStructure_(target);
+  }
+
   /**
    * Returns an array of the subtype's parameters, reordered to match the order
    * of its ancestor.
