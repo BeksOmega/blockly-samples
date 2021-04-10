@@ -142,10 +142,10 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   getExplicitTypes(block, genericType) {
     try {
       const types = this.getBoundTypes_(block, genericType.toLowerCase());
-      if (types[0] == '*') {
+      if (types[0].name == '*') {
         return [];
       }
-      return types;
+      return types.map((type) => structureToString(type));
     } catch (e) {
       throw new ConnectionCheckError(
           'Trying to find the explicit types of ' + genericType + ' on block ' +
@@ -192,8 +192,6 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   getExplicitTypesOfConnectionInternal_(connection) {
     const struct = parseType(getCheck(connection));
     return this.getExplicitVersionsOfType_(connection.getSourceBlock(), struct);
-    // return isExplicitConnection(connection) ? [check]:
-    //     this.getBoundTypes_(connection.getSourceBlock(), check);
   }
 
   /**
@@ -317,27 +315,22 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    */
   getExplicitVersionsOfType_(
       block, struct, connectionToSkip = undefined) {
-    const names = isGeneric(struct.name) ?
-        this.getBoundTypes_(block, struct.name, connectionToSkip):
-        [struct.name];
-    return names
-        .map((name) => {
-          if (!struct.params.length) {
-            return [new TypeStructure(name)];
-          }
-          const paramsLists = struct.params.map((param) =>
-            this.getExplicitVersionsOfType_(block, param, connectionToSkip));
-          paramsLists[0] = paramsLists[0].map((val) => [val]);
-          const combos = combine(paramsLists);
-          return combos.map((combo) => {
-            const struct = new TypeStructure(name);
-            struct.params = combo;
-            return struct;
-          });
-        })
-        .reduce((flat, toFlatten) => {
-          return [...flat, ...toFlatten];
-        }, []);
+    if (isGeneric(struct.name)) {
+      return this.getBoundTypes_(block, struct.name, connectionToSkip);
+    }
+    if (!struct.params.length) {
+      return [struct];
+    }
+
+    const paramsLists = struct.params.map((param) =>
+      this.getExplicitVersionsOfType_(block, param, connectionToSkip));
+    paramsLists[0] = paramsLists[0].map((val) => [val]);
+    const combos = combine(paramsLists);
+    return combos.map((combo) => {
+      const newStruct = new TypeStructure(struct.name);
+      newStruct.params = combo;
+      return newStruct;
+    });
   }
 
   /**
@@ -352,8 +345,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    *     explicit type of.
    * @param {!Blockly.Connection=} connectionToSkip The connection to skip. If
    *     the connection matches this connection, it will be ignored.
-   * @return {!Array<string>} The explicit type(s) bound to the generic type,
-   *     if one exists.
+   * @return {!Array<!TypeStructure>} The explicit type(s) bound to the generic
+   *     type, if one exists.
    * @private
    */
   getBoundTypes_(block, genericType, connectionToSkip = undefined) {
@@ -363,7 +356,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     const type = this.getExternalBinding_(block, genericType);
     if (type) {
       // TODO: Evaluate generics in bound types.
-      return [type];
+      return [new TypeStructure(type)];
     }
 
     types.push(...this.getConnectionTypes_(
@@ -378,11 +371,9 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
         block.nextConnection, genericType, connectionToSkip));
 
     if (types.length) {
-      return this.getTypeHierarchy_()
-          .getNearestCommonParents(...types)
-          .map((typeStruct) => structureToString(typeStruct));
+      return this.getTypeHierarchy_().getNearestCommonParents(...types);
     }
-    return ['*'];
+    return [new TypeStructure('*')];
   }
 
   /**
@@ -435,26 +426,28 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     }
 
     const target = connection.targetConnection;
-    const targetType = parseType(getCheck(target));
+    const targetTypes = this.getExplicitVersionsOfType_(
+        target.getSourceBlock(), parseType(getCheck(target)), target);
 
     if (isGeneric(sourceType.name)) {
-      return this.getExplicitVersionsOfType_(
-          target.getSourceBlock(), targetType, target);
+      return targetTypes;
     }
 
     const hierarchy = this.getTypeHierarchy_();
     const {parent} = this.getParentAndChildConnections_(connection, target);
-    const reorgedType = connection == parent ?
-        hierarchy.reorganizeTypeForAncestor(sourceType, targetType) :
-        hierarchy.reorganizeTypeForAncestor(targetType, sourceType);
-    return this.getMatchingTypes(genericType, sourceType, reorgedType)
-        .map((match) => {
-          return this.getExplicitVersionsOfType_(
-              target.getSourceBlock(), match, target);
-        })
-        .reduce((flat, toFlatten) => {
-          return [...flat, ...toFlatten];
-        }, []);
+    const genericStruct= new TypeStructure(genericType);
+    const getMatches = connection == parent ?
+        hierarchy.getMatchingTypesInDescendant.bind(hierarchy):
+        hierarchy.getMatchingTypesInAncestor.bind(hierarchy);
+    const matchingTypes = targetTypes.reduce((acc, targetType) => {
+      // All matches *should* be the same. Otherwise the connections wouldn't
+      // be connected.
+      const types = getMatches(genericStruct, sourceType, targetType);
+      return types.length ? [...acc, types[0]] : acc;
+    }, []);
+    return matchingTypes.length ?
+        matchingTypes :
+        [new TypeStructure('*')];
   }
 
   /**
@@ -472,31 +465,6 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     }
     return sourceType.params.some(
         (param) => this.containsGenericType_(param, generic));
-  }
-
-  /**
-   * Returns an array of types in the target type matching places where the
-   * genericType appears in the source type.
-   * @param {string} genericType The generic type to find matches for.
-   * @param {!TypeStructure} source The source type which gives us locations
-   *     for the genericType.
-   * @param {!TypeStructure} target The target type, which we are trying to
-   *     find matches in. The target type should have the same structure as the
-   *     source type.
-   * @return {!Array<!TypeStructure>} An array of types in the target type
-   *     matching places where the genericType appears in the source type.
-   */
-  getMatchingTypes(genericType, source, target) {
-    if (source.name == genericType) {
-      return [target];
-    }
-    return source.params
-        .map((param, i) => {
-          return this.getMatchingTypes(genericType, param, target.params[i]);
-        })
-        .reduce((flat, toFlatten) => {
-          return [...flat, ...toFlatten];
-        }, []);
   }
 
   /**
