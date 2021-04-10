@@ -11,12 +11,15 @@
 
 import * as Blockly from 'blockly/core';
 import {TypeHierarchy} from './type_hierarchy';
-import {parseType, structureToString, TypeStructure} from './type_structure';
+import {
+  parseType,
+  structureToString,
+  TypeStructure,
+} from './type_structure';
 import {
   getCheck,
   isGeneric,
-  isGenericConnection,
-  combine, STANDARD_GENERIC, STANDARD_GENERIC_TYPE,
+  combine, STANDARD_GENERIC,
 } from './utils';
 
 
@@ -73,7 +76,9 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    */
   doTypeChecks(a, b) {
     try {
-      return this.doTypeChecksInternal_(a, b);
+      const {parent, child} = this.getParentAndChildConnections_(a, b);
+      const childTypes = this.getExplicitTypesOfConnectionInternal_(child);
+      return this.doTypeChecksInternal_(childTypes, parent);
     } catch (e) {
       throw new ConnectionCheckError(
           'Checking the compatibility of the ' + this.getInputName_(a) +
@@ -88,44 +93,49 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    * Checks the compatibility of the two connections. This function is called
    * from doTypeChecks, and its purpose is to separate business logic from
    * error handling logic.
-   * @param {!Blockly.Connection} a The first connection.
-   * @param {!Blockly.Connection} b The second connection.
+   * @param {!Array<!TypeStructure>} childTypes All of the valid types for the
+   *     child connection.
+   * @param {!Blockly.Connection} parent The parent connection.
    * @return {boolean} True if the connections are compatible, false otherwise.
    * @private
    */
-  doTypeChecksInternal_(a, b) {
-    const {parent, child} = this.getParentAndChildConnections_(a, b);
-    const parentTypes = this.getExplicitTypesOfConnectionInternal_(parent);
-    const childTypes = this.getExplicitTypesOfConnectionInternal_(child);
+  doTypeChecksInternal_(childTypes, parent) {
+    const parentSource = parent.getSourceBlock();
+    const parentCheck = parseType(getCheck(parent));
+    // Programmatic bindings are treated like explicit types.
+    const parentDereferencedType =
+        this.dereferenceExternalBindings_(parentSource, parentCheck);
     const typeHierarchy = this.getTypeHierarchy_();
 
-    if (parentTypes[0].equals(STANDARD_GENERIC) ||
-        childTypes[0].equals(STANDARD_GENERIC)) {
-      // At least one is an unbound generic.
+    // At least one child type must fulfill all of the explicit type
+    // requirements of the parent type.
+    const compatible = childTypes.some((childType) =>
+      typeHierarchy.typeFulfillsType(childType, parentDereferencedType));
+    if (!compatible) {
+      return false;
+    }
+
+    const parentOutput = parentSource.outputConnection ||
+        parentSource.previousConnection;
+    if (!parentOutput) {
+      // If there is no output, we have no reason to constrain the types further
+      // (eg no reason for them to need to share a common parent).
       return true;
     }
 
-    // If the parent is only bound by parameters, allow the child block to
-    // connect if any of its types share a common ancestor with any of the
-    // parent types.
-    const parentSource = parent.getSourceBlock();
-    const parentCheck = getCheck(parent);
-    if (isGenericConnection(parent) &&
-        this.typeIsOnlyBoundByParams_(parentSource, parentCheck)) {
-      return childTypes.some((childType) => {
-        return parentTypes.some((parentType) => {
-          return typeHierarchy.getNearestCommonParents(
-              childType, parentType).length;
-        });
-      });
+    // Make sure that a type for the output can be "found", and it is still
+    // compatible with the input it is currently connected to (if one exists).
+    const parentOutputCheck = parseType(getCheck(parentOutput));
+    const typeMap = new Map().set(parent, childTypes);
+    const parentOutputTypes = this.getExplicitVersionsOfType_(
+        parentSource, parentOutputCheck, undefined, false, typeMap);
+    if (parentOutput.targetConnection) {
+      // Check that it is still compatible.
+      return this.doTypeChecksInternal_(
+          parentOutputTypes, parentOutput.targetConnection);
     }
-
-    return childTypes.some((childType) => {
-      return parentTypes.some((parentType) => {
-        return typeHierarchy.typeFulfillsType(
-            childType, parentType);
-      });
-    });
+    // Ensure that a type could be "found" at least.
+    return !!parentOutputTypes.length;
   }
 
   /**
@@ -304,6 +314,19 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   }
 
   /**
+   * Returns true if the given connection is a parent connection, false
+   * otherwise.
+   * @param {!Blockly.Connection} connection The connection to get the
+   *     parent-ness of.
+   * @return {boolean} True if the given connection is a parent connection,
+   *     false otherwise.
+   * @private
+   */
+  isParent_(connection) {
+    return connection.isSuperior();
+  }
+
+  /**
    * Returns an array of the given type structure with its generic params
    * replaced with all valid combinations of bindings. If a generic is unbound
    * then it replaced with the STANDARD_GENERIC.
@@ -312,21 +335,34 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    * @param {!TypeStructure} struct The struct to replace the generics of.
    * @param {!Blockly.Connection=} connectionToSkip The connection to skip. If
    *     the connection matches this connection, it will be ignored.
+   * @param {boolean=} checkOutputs If true, this will check block outputs when
+   *     attempting to find the explicit type. If false, it will not.
+   * @param {!Map<Blockly.Connection, !Array<!TypeStructure>>=} typesMap A map
+   *     mapping connections to the valid types of their target connection.
+   *     This is used to simulate two connections being connected to see if that
+   *     would cause the stack of blocks to be badly typed.
    * @return {!Array<!TypeStructure>} An array of the given type structure with
    *     its generic params replaced with all valid combinations of bindings.
    * @private
    */
   getExplicitVersionsOfType_(
-      block, struct, connectionToSkip = undefined) {
+      block,
+      struct,
+      connectionToSkip = undefined,
+      checkOutputs = true,
+      typesMap = undefined,
+  ) {
     if (isGeneric(struct.name)) {
-      return this.getBoundTypes_(block, struct.name, connectionToSkip);
+      return this.getBoundTypes_(
+          block, struct.name, connectionToSkip, checkOutputs, typesMap);
     }
     if (!struct.params.length) {
       return [struct];
     }
 
     const paramsLists = struct.params.map((param) =>
-      this.getExplicitVersionsOfType_(block, param, connectionToSkip));
+      this.getExplicitVersionsOfType_(
+          block, param, connectionToSkip, checkOutputs, typesMap));
     paramsLists[0] = paramsLists[0].map((val) => [val]);
     const combos = combine(paramsLists);
     return combos.map((combo) => {
@@ -339,7 +375,9 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   /**
    * Returns the explicit type(s) bound to the block generic type pair if one
    * exists. If no explicit type is found, this returns an array containing only
-   * the STANDARD_GENERIC_TYPE.
+   * the STANDARD_GENERIC. If the types associated with the generic were
+   * not compatible (we couldn't find a nearest common parent) this returns an
+   * empty array.
    *
    * Note that we only get multiple types via type unification of types that
    * are externally bound, or associated with input connections.
@@ -349,13 +387,27 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    *     explicit type of.
    * @param {!Blockly.Connection=} connectionToSkip The connection to skip. If
    *     the connection matches this connection, it will be ignored.
-   * @return {!Array<!TypeStructure>} The explicit type(s) bound to the generic
-   *     type, if one exists.
+   * @param {boolean=} checkOutputs If true, this will check block outputs when
+   *     attempting to find the explicit type. If false, it will not.
+   * @param {!Map<Blockly.Connection, !Array<!TypeStructure>>=} typesMap A map
+   *     mapping connections to the valid types of their target connection.
+   *     This is used to simulate two connections being connected to see if that
+   *     would cause the stack of blocks to be badly typed.
+   * @return {!Array<!TypeStructure>} The explicit type(s) bound to the generic,
+   *     if a compatible binding could be found. If no explicit type could be
+   *     found, this returns an array containing only the STANDARD_GENERIC. If
+   *     the types associated with the generic were not compatible this returns
+   *     an empty array.
    * @private
    */
-  getBoundTypes_(block, genericType, connectionToSkip = undefined) {
+  getBoundTypes_(
+      block,
+      genericType,
+      connectionToSkip = undefined,
+      checkOutputs = true,
+      typesMap = undefined,
+  ) {
     genericType = genericType.toLowerCase();
-    const types = [];
 
     const type = this.getExternalBinding_(block, genericType);
     if (type) {
@@ -363,21 +415,67 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
       return [new TypeStructure(type)];
     }
 
-    types.push(...this.getConnectionTypes_(
-        block.outputConnection, genericType, connectionToSkip));
-    types.push(...this.getConnectionTypes_(
-        block.previousConnection, genericType, connectionToSkip));
+    const params = [genericType, connectionToSkip, checkOutputs, typesMap];
+    // The structure of go this is like:
+    //  [  [  [a, b], [] ], [ [], [c, d, e] ], [ ] ]
+    //  ^  ^  ^-unifications of types associated with the given generic
+    //  |  \all sets of unifications for a given connection
+    //  \outer collection of all connections' unifications
+    //
+    // We use type arrays instead of just concatenating all of the types into
+    // a 1D array so that we can unify the types, and then if only some of the
+    // unifications unify with other unifications, we still get a valid bound
+    // type.
+    /* @type{!Array<!Array<!Array<!TypeStructure>>>>} */
+    let typeArrays = [];
+    if (checkOutputs) {
+      typeArrays.push(this.getConnectionTypes_(
+          block.outputConnection, ...params));
+      typeArrays.push(this.getConnectionTypes_(
+          block.previousConnection, ...params));
+    }
     for (const input of block.inputList) {
-      types.push(...this.getConnectionTypes_(
-          input.connection, genericType, connectionToSkip));
+      typeArrays.push(
+          this.getConnectionTypes_(input.connection, ...params));
     }
-    types.push(...this.getConnectionTypes_(
-        block.nextConnection, genericType, connectionToSkip));
+    typeArrays.push(
+        this.getConnectionTypes_(block.nextConnection, ...params));
+    typeArrays = typeArrays.filter((typeArray) => typeArray.length);
 
-    if (types.length) {
-      return this.getTypeHierarchy_().getNearestCommonParents(...types);
+    if (!typeArrays.length) {
+      // None of the connections had any bindings for the type.
+      return [STANDARD_GENERIC];
     }
-    return [STANDARD_GENERIC];
+
+    const hierarchy = this.getTypeHierarchy_();
+    // Flatten all of the unifications together.
+    /* @type{!Array<!Array<!TypeStructure} */
+    const reducedTypeArrays = typeArrays.map((connectionArray) =>
+      connectionArray
+          .reduce((flat, toFlatten) => [...flat, ...toFlatten], []));
+
+    if (reducedTypeArrays.some((connectionArray) => !connectionArray.length)) {
+      // One of the connections had no valid unification for any combination of
+      // types associated with the generic, so we won't be able to "find" a type
+      // for the generic. Fail out of this function.
+      return [];
+    }
+
+    return reducedTypeArrays
+        // Get the nearest common types of all the connection types.
+        .reduce((acc, typeArray) =>
+          acc.map((accType) =>
+            typeArray.map((type) =>
+              hierarchy.getNearestCommonParents(accType, type)
+            ).reduce((flat, toFlatten) => [...flat, ...toFlatten], [])
+          ).reduce((flat, toFlatten) => [...flat, ...toFlatten], []))
+        // Remove duplicates
+        .filter((type1, i, types) =>
+          types.findIndex((type2) => type1.equals(type2)) == i)
+        // Remove not-nearest common types.
+        .filter((type1, i, types) =>
+          types.every((type2, j) =>
+            i == j || !hierarchy.typeFulfillsType(type2, type1)));
   }
 
   /**
@@ -400,28 +498,43 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   }
 
   /**
-   * Acts as a helper for the getBoundTypes_ function *and should only be used
-   * as such*. Only operates on the connection if its check matches the passed
-   * genericType, and it is not the connectionToSkip. Returns the bound type(s)
-   * associated with this connection. If the connection is invalid, returns an
-   * empty array. If no binding could be found for the generic type, returns
-   * an array containing only the STANDARD_GENERIC_TYPE.
+   * Returns arrays of bound type(s) associated with the passed connection (if
+   * the connection is valid and bound types could be found). Each array
+   * contains the nearest common parents of the set of bound types for one of
+   * the types on the connection. If all of the bound types are generic, this is
+   * an array of the STANDARD_GENERIC. If the connection is invalid, this
+   * returns an empty array.
    * @param {!Blockly.Connection} connection The connection to get the bound
    *     type of.
    * @param {string} genericType The generic type to find the bound type of.
    * @param {!Blockly.Connection=} connectionToSkip The connection to skip. If
    *     the connection matches this connection, it will be ignored.
-   * @return {!Array<!TypeStructure>} The bound type(s) associated with the
-   *     passed connection, if the connection is valid and bound types could
-   *     be found. If the connect is invalid, returns an empty array. If no
-   *     binding could be found for the generic type, returns an array
-   *     containing only the STANDARD_GENERIC_TYPE.
+   * @param {boolean=} checkOutputs If true, this will check block outputs when
+   *     attempting to find the explicit type. If false, it will not.
+   * @param {!Map<Blockly.Connection, !Array<!TypeStructure>>=} typesMap A map
+   *     mapping connections to the valid types of their target connection.
+   *     This is used to simulate two connections being connected to see if that
+   *     would cause the stack of blocks to be badly typed.
+   * @return {!Array<!Array<!TypeStructure>>} Arrays of bound type(s) associated
+   *     with the passed connection (if the connection is valid and bound types
+   *     could be found). Each array contains the nearest common parents of the
+   *     set of bound types for one of the types on the connection. If all of
+   *     the bound types are generic, this is an array of the STANDARD_GENERIC.
+   *     If the connection is invalid, this returns an empty array.
    * @private
    */
-  getConnectionTypes_(connection, genericType, connectionToSkip) {
-    if (!connection ||
-        connection == connectionToSkip ||
-        !connection.targetConnection) {
+  getConnectionTypes_(
+      connection,
+      genericType,
+      connectionToSkip = undefined,
+      checkOutputs = true,
+      typesMap = undefined,
+  ) {
+    if (!connection || connection == connectionToSkip) {
+      return [];
+    }
+    if (!connection.targetConnection &&
+        (!typesMap || !typesMap.has(connection))) {
       return [];
     }
 
@@ -430,29 +543,39 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
       return [];
     }
 
-    const target = connection.targetConnection;
-    const targetTypes = this.getExplicitVersionsOfType_(
-        target.getSourceBlock(), parseType(getCheck(target)), target);
+    // Get the types of the connection connected to this connection.
+    let targetTypes;
+    if (typesMap && typesMap.has(connection)) {
+      targetTypes = typesMap.get(connection);
+    } else {
+      const target = connection.targetConnection;
+      targetTypes = this.getExplicitVersionsOfType_(
+          target.getSourceBlock(),
+          parseType(getCheck(target)),
+          target,
+          checkOutputs);
+    }
 
     if (isGeneric(sourceType.name)) {
-      return targetTypes;
+      return [targetTypes];
     }
 
     const hierarchy = this.getTypeHierarchy_();
-    const {parent} = this.getParentAndChildConnections_(connection, target);
-    const genericStruct= new TypeStructure(genericType);
-    const getMatches = connection == parent ?
+    const genericStruct = new TypeStructure(genericType);
+    const getMatches = this.isParent_(connection) ?
         hierarchy.getMatchingTypesInDescendant.bind(hierarchy):
         hierarchy.getMatchingTypesInAncestor.bind(hierarchy);
-    const matchingTypes = targetTypes.reduce((acc, targetType) => {
-      // All matches *should* be the same. Otherwise the connections wouldn't
-      // be connected.
-      const types = getMatches(genericStruct, sourceType, targetType);
-      return types.length ? [...acc, types[0]] : acc;
-    }, []);
-    return matchingTypes.length ?
-        matchingTypes :
-        [new TypeStructure('*')];
+    return targetTypes
+        // Get all of the types associated with the given generic.
+        .map((targetType) => getMatches(genericStruct, sourceType, targetType))
+        // If all of the types are generic, map to the standard generic,
+        // otherwise map to the nearest common parent of all of the types.
+        .map((typeCombo) => {
+          if (typeCombo.every((type) => isGeneric(type.name))) {
+            return [STANDARD_GENERIC];
+          }
+          return hierarchy.getNearestCommonParents(...typeCombo);
+        });
   }
 
   /**
@@ -473,34 +596,28 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   }
 
   /**
-   * Returns true if the given block generic type pair is only bound by input or
-   * next connections. Returns false if it is bound by an explicit binding, or
-   * connections to the output or previous connections.
-   * @param {!Blockly.Block} block The block that provides the context for the
-   *     generic type.
-   * @param {string} genericType The generic type that we want to check the
-   *     state of.
-   * @return {boolean} True if the type is only bound by inputs, false
-   *     otherwise.
+   * Replaces any generics that are bound to explicit types via bindType() with
+   * their explicit types. Does not replace generics that are bound via
+   * connections between blocks.
+   * @param {!Blockly.Block} block The block that provides context for the
+   *     explicit binding.
+   * @param {!TypeStructure} structure The block to dereference the explicit
+   *     bindings for.
+   * @return {!TypeStructure} The type structure with the explicit bindings
+   *     dereferenced.
    * @private
    */
-  typeIsOnlyBoundByParams_(block, genericType) {
-    if (this.getExternalBinding_(block, genericType)) {
-      return false;
+  dereferenceExternalBindings_(block, structure) {
+    let newStruct;
+    if (isGeneric(structure.name)) {
+      newStruct = new TypeStructure(
+          this.getExternalBinding_(block, structure.name) || structure.name);
+    } else {
+      newStruct = new TypeStructure(structure.name);
+      newStruct.params = structure.params.map((param) =>
+        this.dereferenceExternalBindings_(block, param));
     }
-    const outputBinding = this.getConnectionTypes_(
-        block.outputConnection, genericType);
-    if (outputBinding.length &&
-        !outputBinding[0].equals(STANDARD_GENERIC)) {
-      return false;
-    }
-    const previousBinding = this.getConnectionTypes_(
-        block.previousConnection, genericType);
-    if (previousBinding.length &&
-        !previousBinding[0].equals(STANDARD_GENERIC)) {
-      return false;
-    }
-    return true;
+    return newStruct;
   }
 
   /**
