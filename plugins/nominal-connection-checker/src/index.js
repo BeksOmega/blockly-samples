@@ -11,7 +11,12 @@
 
 import * as Blockly from 'blockly/core';
 import {TypeHierarchy} from './type_hierarchy';
-import {parseType, structureToString, TypeStructure} from './type_structure';
+import {
+  duplicateStructure,
+  parseType,
+  structureToString,
+  TypeStructure
+} from './type_structure';
 import {
   getCheck,
   isGeneric,
@@ -442,14 +447,18 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     const hierarchy = this.getTypeHierarchy_();
     const {parent} = this.getParentAndChildConnections_(connection, target);
     const genericStruct= new TypeStructure(genericType);
-    const getTypes = connection == parent ?
+    const getMatches = connection == parent ?
         hierarchy.getMatchingTypesInDescendant.bind(hierarchy):
         hierarchy.getMatchingTypesInAncestor.bind(hierarchy);
-    return targetTypes.reduce((acc, targetType) => {
-      // All explicits *should* be the same. Otherwise the connections wouldn't
+    const matchingTypes = targetTypes.reduce((acc, targetType) => {
+      // All matches *should* be the same. Otherwise the connections wouldn't
       // be connected.
-      return [...acc, getTypes(genericStruct, sourceType, targetType)[0]];
+      const types = getMatches(genericStruct, sourceType, targetType);
+      return types.length ? [...acc, types[0]] : acc;
     }, []);
+    return matchingTypes.length ?
+        matchingTypes :
+        [duplicateStructure(STANDARD_GENERIC)];
   }
 
   /**
