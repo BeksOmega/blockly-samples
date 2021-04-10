@@ -10305,7 +10305,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('No instance of generic in source', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -10321,28 +10321,28 @@ suite('TypeHierarchy', function() {
     });
 
     test('Generic, Generic', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {},
       });
       this.assertMatches(hierarchy, 't', 't', 'g', ['g']);
     });
 
     test('Generic, Standard generic', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {},
       });
       this.assertMatches(hierarchy, 't', 't', '*', ['*']);
     });
 
     test('Generic, Explicit', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {},
       });
       this.assertMatches(hierarchy, 'a', 'a', 'typeA', ['typeA']);
     });
 
     test('Generic, Explicit w/ params', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -10357,7 +10357,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Generic param, generic', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -10372,7 +10372,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Generic param, Explicit param - same outers', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -10387,7 +10387,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Generic param, Explicit param - sub outer', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -10411,7 +10411,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Generic param, Explicit param w/ params', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -10441,7 +10441,7 @@ suite('TypeHierarchy', function() {
 
     suite('Multiple params', function() {
       test('Single param, Multiple params', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10471,7 +10471,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple params, Single param', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10502,7 +10502,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple params, Multiple params', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10540,7 +10540,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple params, Multiple params - mixed up', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10578,7 +10578,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple same param, Single param', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10608,7 +10608,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple same param, Multiple same param', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10642,7 +10642,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple same param, Multiple diff params', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10680,7 +10680,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple same param - nested, Multiple diff params', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10727,7 +10727,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Nested generic param, Generic', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -10742,7 +10742,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Nested generic param, Generic param', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -10757,7 +10757,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Nested generic param, Nested generic param', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -10778,7 +10778,7 @@ suite('TypeHierarchy', function() {
 
     suite('Nested generic param, Nested explicit param', function() {
       test('Covariant, Covariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10815,7 +10815,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Covariant, Contravariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10852,7 +10852,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Covariant, Invariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10889,7 +10889,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Contravariant, Covariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10926,7 +10926,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Contravariant, Contravariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -10963,7 +10963,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Contravariant, Invariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11000,7 +11000,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Invariant, Covariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11037,7 +11037,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Invariant, Contravariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11074,7 +11074,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Invariant, Invariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11137,7 +11137,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('No instance of generic in source', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -11153,28 +11153,28 @@ suite('TypeHierarchy', function() {
     });
 
     test('Generic, Generic', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {},
       });
       this.assertMatches(hierarchy, 't', 't', 'g', ['g']);
     });
 
     test('Generic, Standard generic', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {},
       });
       this.assertMatches(hierarchy, 't', 't', '*', ['*']);
     });
 
     test('Generic, Explicit', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {},
       });
       this.assertMatches(hierarchy, 'a', 'a', 'typeA', ['typeA']);
     });
 
     test('Generic, Explict w/ params', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -11189,7 +11189,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Generic param, generic', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -11204,7 +11204,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Generic param, Explicit param - same outers', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -11219,7 +11219,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Generic param, Explicit param - super outer', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -11243,7 +11243,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Generic param, Explicit param w/ params', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -11273,7 +11273,7 @@ suite('TypeHierarchy', function() {
 
     suite('Multiple params', function() {
       test('Multiple params, Single param - can match', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11303,7 +11303,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple params, Single param - no match', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11333,7 +11333,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Single param, Multiple params', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11364,7 +11364,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple params, Multiple params', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11402,7 +11402,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple params, Multiple params - mixed up', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11440,7 +11440,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Single param, Multiple same param', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11470,7 +11470,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple same param, Multiple params', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11504,7 +11504,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple same param, Multiple diff params', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11542,7 +11542,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Multiple same param - nested, Multiple diff params', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11589,7 +11589,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Nested generic param, Generic', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -11604,7 +11604,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Nested generic param, Generic param', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -11619,7 +11619,7 @@ suite('TypeHierarchy', function() {
     });
 
     test('Nested generic param, Nested generic param', function() {
-      const hierarchy = new TypeHierarchy({
+      const hierarchy = this.createTypeHierarchy({
         'typeA': {
           'params': [
             {
@@ -11640,7 +11640,7 @@ suite('TypeHierarchy', function() {
 
     suite('Nested generic param, Nested explicit param', function() {
       test('Covariant, Covariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11677,7 +11677,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Covariant, Contravariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11714,7 +11714,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Covariant, Invariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11751,7 +11751,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Contravariant, Covariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11788,7 +11788,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Contravariant, Contravariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11825,7 +11825,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Contravariant, Invariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11862,7 +11862,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Invariant, Covariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11899,7 +11899,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Invariant, Contravariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
@@ -11936,7 +11936,7 @@ suite('TypeHierarchy', function() {
       });
 
       test('Invariant, Invariant', function() {
-        const hierarchy = new TypeHierarchy({
+        const hierarchy = this.createTypeHierarchy({
           'typeA': {
             'params': [
               {
