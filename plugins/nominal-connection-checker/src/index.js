@@ -72,16 +72,16 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    * @override
    */
   doTypeChecks(a, b) {
-    // try {
+    try {
       return this.doTypeChecksInternal_(a, b);
-    // } catch (e) {
-    //   throw new ConnectionCheckError(
-    //       'Checking the compatibility of the ' + this.getInputName_(a) +
-    //       ' and ' + this.getInputName_(b) + ' connections on blocks ' +
-    //       a.getSourceBlock().toDevString() + ' and ' +
-    //       b.getSourceBlock().toDevString() + ' threw an error. ' +
-    //       'Error: ' + e.message, e);
-    // }
+    } catch (e) {
+      throw new ConnectionCheckError(
+          'Checking the compatibility of the ' + this.getInputName_(a) +
+          ' and ' + this.getInputName_(b) + ' connections on blocks ' +
+          a.getSourceBlock().toDevString() + ' and ' +
+          b.getSourceBlock().toDevString() + ' threw an error. ' +
+          'Error: ' + e.message, e);
+    }
   }
 
   /**
@@ -432,26 +432,24 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     }
 
     const target = connection.targetConnection;
-    const targetType = parseType(getCheck(target));
+    const targetTypes = this.getExplicitVersionsOfType_(
+        target.getSourceBlock(), parseType(getCheck(target)), target);
 
     if (isGeneric(sourceType.name)) {
-      return this.getExplicitVersionsOfType_(
-          target.getSourceBlock(), targetType, target);
+      return targetTypes;
     }
 
     const hierarchy = this.getTypeHierarchy_();
     const {parent} = this.getParentAndChildConnections_(connection, target);
-    const reorgedType = connection == parent ?
-        hierarchy.reorganizeTypeForAncestor(sourceType, targetType) :
-        hierarchy.reorganizeTypeForAncestor(targetType, sourceType);
-    return this.getMatchingTypes(genericType, sourceType, reorgedType)
-        .map((match) => {
-          return this.getExplicitVersionsOfType_(
-              target.getSourceBlock(), match, target);
-        })
-        .reduce((flat, toFlatten) => {
-          return [...flat, ...toFlatten];
-        }, []);
+    const genericStruct= new TypeStructure(genericType);
+    const getTypes = connection == parent ?
+        hierarchy.getMatchingTypesInDescendant.bind(hierarchy):
+        hierarchy.getMatchingTypesInAncestor.bind(hierarchy);
+    return targetTypes.reduce((acc, targetType) => {
+      // All explicits *should* be the same. Otherwise the connections wouldn't
+      // be connected.
+      return [...acc, getTypes(genericStruct, sourceType, targetType)[0]];
+    }, []);
   }
 
   /**
@@ -469,31 +467,6 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     }
     return sourceType.params.some(
         (param) => this.containsGenericType_(param, generic));
-  }
-
-  /**
-   * Returns an array of types in the target type matching places where the
-   * genericType appears in the source type.
-   * @param {string} genericType The generic type to find matches for.
-   * @param {!TypeStructure} source The source type which gives us locations
-   *     for the genericType.
-   * @param {!TypeStructure} target The target type, which we are trying to
-   *     find matches in. The target type should have the same structure as the
-   *     source type.
-   * @return {!Array<!TypeStructure>} An array of types in the target type
-   *     matching places where the genericType appears in the source type.
-   */
-  getMatchingTypes(genericType, source, target) {
-    if (source.name == genericType) {
-      return [target];
-    }
-    return source.params
-        .map((param, i) => {
-          return this.getMatchingTypes(genericType, param, target.params[i]);
-        })
-        .reduce((flat, toFlatten) => {
-          return [...flat, ...toFlatten];
-        }, []);
   }
 
   /**

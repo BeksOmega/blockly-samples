@@ -518,8 +518,7 @@ export class TypeHierarchy {
   /**
    * Returns an array of the types in the target structure that match instances
    * of the given generic type in the source structure. These matching types
-   * may be generic or explicit. If the generic matches against an instance of
-   * the standard generic type, that match will not be returned.
+   * may be generic or explicit.
    * @param {!TypeStructure} generic The generic type structure to match
    *     against.
    * @param {!TypeStructure} source The type structure to find instances of the
@@ -530,22 +529,21 @@ export class TypeHierarchy {
    *     that match instances of the given generic type in the source structure.
    *     If no matches can be found, an empty array is returned.
    */
-  getMatchingExplicitsInDescendant(generic, source, target) {
-    return this.getMatchingExplicits_(
+  getMatchingTypesInDescendant(generic, source, target) {
+    return this.getMatchingTypes_(
         generic,
         source,
         target,
         (subDef, name, params) =>
           subDef.getParamsForAncestor(name, params),
-        this.getMatchingExplicitsInDescendant.bind(this),
-        this.getMatchingExplicitsInAncestor.bind(this));
+        this.getMatchingTypesInDescendant.bind(this),
+        this.getMatchingTypesInAncestor.bind(this));
   }
 
   /**
    * Returns an array of the types in the target structure that match instances
    * of the given generic type in the source structure. These matching types
-   * may be generic or explicit. If the generic matches against an instance of
-   * the standard generic type, that match will not be returned.
+   * may be generic or explicit.
    * @param {!TypeStructure} generic The generic type structure to match
    *     against.
    * @param {!TypeStructure} source The type structure to find instances of the
@@ -556,21 +554,20 @@ export class TypeHierarchy {
    *     that match instances of the given generic type in the source structure.
    *     If no matches can be found, an empty array is returned.
    */
-  getMatchingExplicitsInAncestor(generic, source, target) {
-    return this.getMatchingExplicits_(
+  getMatchingTypesInAncestor(generic, source, target) {
+    return this.getMatchingTypes_(
         generic,
         source,
         target,
         this.getParamsForDescendant_.bind(this),
-        this.getMatchingExplicitsInAncestor.bind(this),
-        this.getMatchingExplicitsInDescendant.bind(this));
+        this.getMatchingTypesInAncestor.bind(this),
+        this.getMatchingTypesInDescendant.bind(this));
   }
 
   /**
    * Returns an array of the types in the target structure that match instances
    * of the given generic type in the source structure. These matching types
-   * may be generic or explicit. If the generic matches against an instance of
-   * the standard generic type, that match will not be returned.
+   * may be generic or explicit.
    * @param {!TypeStructure} generic The generic type structure to match
    *     against.
    * @param {!TypeStructure} source The type structure to find instances of the
@@ -592,7 +589,7 @@ export class TypeHierarchy {
    *     that match instances of the given generic type in the source structure.
    *     If no matches can be found, an empty array is returned.
    */
-  getMatchingExplicits_(
+  getMatchingTypes_(
       generic,
       source,
       target,
@@ -601,11 +598,10 @@ export class TypeHierarchy {
       contravariantRecursion
   ) {
     if (source.equals(generic)) {
-      // Standard generic represents a type that a binding could
-      // not be found for.
-      return target.equals(this.standardGeneric_) ? [] : [target];
+      // Null represents a type that we don't have info for.
+      return !target ? [] : [target];
     }
-    if (this.isGeneric_(target.name) || !source.params.length) {
+    if (!target || this.isGeneric_(target.name) || !source.params.length) {
       return [];
     }
 
@@ -721,9 +717,9 @@ export class TypeHierarchy {
       const mappedParams = getParamsForCommon(
           this.types_.get(typeStruct.name), commonType, typeStruct.params);
       mappedParams.forEach((param, i) => {
-        // TODO: This doesn't work if they all evaluate to the standard!
-        if (param.equals(this.standardGeneric_)) {
-          // We don't have type info for these params, just ignore them.
+        // TODO: This doesn't work if they all evaluate to null!
+        if (!param) {
+          // Just ignore nulls, we don't have type info for these params.
           return;
         }
         if (!paramsLists[i]) {
@@ -798,18 +794,16 @@ export class TypeHierarchy {
    *     to get the params in the order of.
    * @param {!Array<!TypeStructure>} actualParams The actual parameters to the
    *     type.
-   * @return {Array<!TypeStructure>} The actualParams put in the order of the
+   * @return {Array<TypeStructure?>} The actualParams put in the order of the
    *     descendant's params, or null if no valid mapping can be found. If
    *     the given type does not have a parameter for a parameter of the
-   *     descendant, the element at that parameter's index will be the standard
-   *     generic type.
+   *     descendant, the element at that parameter's index will be null.
    * @private
    */
   getParamsForDescendant_(type, descendantName, actualParams) {
     const descendantDef = this.types_.get(descendantName);
     const descendantToThis = descendantDef.getParamsForAncestor(type.name);
-    const replacedParams = descendantDef.params().map((_) =>
-      duplicateStructure(this.standardGeneric_));
+    const replacedParams = descendantDef.params().map((_) => null);
 
     const mapTypes = (formalParams, actualParams) => {
       // formalParams and actualParams should always have the same length due
@@ -819,7 +813,7 @@ export class TypeHierarchy {
         if (this.isGeneric_(formalParam.name)) {
           const descParamInd = descendantDef.getIndexOfParam(formalParam.name);
           const currParam = replacedParams[descParamInd];
-          if (!currParam.equals(this.standardGeneric_) &&
+          if (currParam != null &&
               !currParam.equals(actualParam)) {
             return false;
           }
