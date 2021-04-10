@@ -404,6 +404,11 @@ export class TypeHierarchy {
       return [duplicateStructure(this.standardGeneric_)];
     }
 
+    types = types.filter((type) => this.isExplicit_(type.name));
+    if (!types.length) { // All types were generic.
+      return [duplicateStructure(this.standardGeneric_)];
+    }
+
     // Get the nearest common types for the "outer" types.
     const commonTypes = this.getNearestCommon_(
         types.map((type) => type.name), this.nearestCommonAncestors_);
@@ -423,7 +428,7 @@ export class TypeHierarchy {
         continue;
       }
       const commonDef = this.types_.get(commonType);
-      paramsLists = this.unifyParamsLists(
+      paramsLists = this.unifyParamsLists_(
           paramsLists,
           commonDef,
           this.getNearestCommonParents.bind(this),
@@ -503,7 +508,7 @@ export class TypeHierarchy {
           if (!paramsLists.length) {
             return [new TypeStructure(commonType)];
           }
-          paramsLists = this.unifyParamsLists(
+          paramsLists = this.unifyParamsLists_(
               paramsLists,
               this.types_.get(commonType),
               this.getNearestCommonDescendants.bind(this),
@@ -526,8 +531,7 @@ export class TypeHierarchy {
    * may be generic or explicit.
    * This function assumes that the *explicit types* in the source and target
    * are compatible, but it does *not* assume that the given generic is only
-   * associated with a single other type, which is necessary for the *entire
-   * types* to be compatible.
+   * associated with a single other type.
    * @param {!TypeStructure} generic The generic type structure to match
    *     against.
    * @param {!TypeStructure} source The type structure to find instances of the
@@ -555,8 +559,7 @@ export class TypeHierarchy {
    * may be generic or explicit.
    * This function assumes that the *explicit types* in the source and target
    * are compatible, but it does *not* assume that the given generic is only
-   * associated with a single other type, which is necessary for the *entire
-   * types* to be compatible.
+   * associated with a single other type.
    * @param {!TypeStructure} generic The generic type structure to match
    *     against.
    * @param {!TypeStructure} source The type structure to find instances of the
@@ -583,8 +586,7 @@ export class TypeHierarchy {
    * may be generic or explicit.
    * This function assumes that the *explicit types* in the source and target
    * are compatible, but it does *not* assume that the given generic is only
-   * associated with a single other type, which is necessary for the *entire
-   * types* to be compatible.
+   * associated with a single other type.
    * @param {!TypeStructure} generic The generic type structure to match
    *     against.
    * @param {!TypeStructure} source The type structure to find instances of the
@@ -759,8 +761,9 @@ export class TypeHierarchy {
    * @return {!Array<!Array<!TypeStructure>>} An array of arrays of common types
    *     for each of the lists of actual types for a given parameter of the
    *     commonDef. An empty subarray means a common type could not be found.
+   * @private
    */
-  unifyParamsLists(
+  unifyParamsLists_(
       paramsLists,
       commonDef,
       covariantRecursion,
@@ -769,13 +772,22 @@ export class TypeHierarchy {
     return paramsLists.map((paramList, i) => {
       switch (commonDef.getParamForIndex(i).variance) {
         case Variance.CO:
+          // Will deal with generics.
           return covariantRecursion(...paramList);
         case Variance.CONTRA:
+          // Will deal with generics.
           return contravariantRecursion(...paramList);
         case Variance.INV:
+          paramList = paramList.filter(
+              (param) => this.isExplicit_(param.name));
+          if (!paramList.length) { // All types were generic.
+            return [duplicateStructure(this.standardGeneric_)];
+          }
+
           // eslint-disable-next-line no-case-declarations
           const [first, ...rest] = paramList;
-          if (rest.every((typeStruct) => typeStruct.equals(first))) {
+          if (rest.every(
+              (typeStruct) => this.typeIsExactlyType(typeStruct, first))) {
             return [first];
           }
           return []; // Empty array means the types do not unify.
