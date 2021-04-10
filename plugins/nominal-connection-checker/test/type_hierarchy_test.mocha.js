@@ -2022,7 +2022,7 @@ suite('TypeHierarchy', function() {
 
   suite('typeIsExactlyType', function() {
     setup(function() {
-      this.assertMatches = function(hierarchy, sub, sup, msg) {
+      this.assertMatch = function(hierarchy, sub, sup, msg) {
         chai.assert.isTrue(
             hierarchy.typeIsExactlyType(parseType(sub), parseType(sup)), msg);
       };
@@ -2036,16 +2036,16 @@ suite('TypeHierarchy', function() {
       const hierarchy = this.createTypeHierarchy({
         'typeA': { },
       });
-      this.assertMatches(hierarchy, 'typeA', 'typeA');
+      this.assertMatch(hierarchy, 'typeA', 'typeA');
     });
 
     test('Case', function() {
       const hierarchy = this.createTypeHierarchy({
         'typeA': { },
       });
-      this.assertMatches(hierarchy, 'typeA', 'typea',
+      this.assertMatch(hierarchy, 'typeA', 'typea',
           'Expected TypeHierarchy to be case-insensitive.');
-      this.assertMatches(hierarchy, 'typea', 'typeA',
+      this.assertMatch(hierarchy, 'typea', 'typeA',
           'Expected TypeHierarchy to be case-insensitive.');
     });
 
@@ -2090,7 +2090,7 @@ suite('TypeHierarchy', function() {
         },
         'typeB': { },
       });
-      this.assertMatches(hierarchy, 'typeA[typeB]', 'typeA[typeB]');
+      this.assertMatch(hierarchy, 'typeA[typeB]', 'typeA[typeB]');
     });
 
     test('Case params', function() {
@@ -2105,10 +2105,10 @@ suite('TypeHierarchy', function() {
         },
         'typeB': { },
       });
-      this.assertMatches(hierarchy, 'typeA[typeB]', 'typea[typeB]');
-      this.assertMatches(hierarchy, 'typea[typeB]', 'typeA[typeB]');
-      this.assertMatches(hierarchy, 'typeA[typeB]', 'typeA[typeb]');
-      this.assertMatches(hierarchy, 'typeA[typeb]', 'typeA[typeB]');
+      this.assertMatch(hierarchy, 'typeA[typeB]', 'typea[typeB]');
+      this.assertMatch(hierarchy, 'typea[typeB]', 'typeA[typeB]');
+      this.assertMatch(hierarchy, 'typeA[typeB]', 'typeA[typeb]');
+      this.assertMatch(hierarchy, 'typeA[typeb]', 'typeA[typeB]');
     });
 
     test('Parent and child params', function() {
@@ -2178,15 +2178,15 @@ suite('TypeHierarchy', function() {
       });
 
       test('First generic', function() {
-        this.assertMatches(this.hierarchy, 't', 'typeA');
+        this.assertMatch(this.hierarchy, 't', 'typeA');
       });
 
       test('Second generic', function() {
-        this.assertMatches(this.hierarchy, 'typeA', 't');
+        this.assertMatch(this.hierarchy, 'typeA', 't');
       });
 
       test('Both generic', function() {
-        this.assertMatches(this.hierarchy, 't', 'g');
+        this.assertMatch(this.hierarchy, 't', 'g');
       });
     });
 
@@ -2218,31 +2218,31 @@ suite('TypeHierarchy', function() {
       });
 
       test('Pure generic w/ params', function() {
-        this.assertMatches(this.hierarchy, 't', 'typeA[typeC]');
+        this.assertMatch(this.hierarchy, 't', 'typeA[typeC]');
       });
 
       test('Pure generic w/ generic params', function() {
-        this.assertMatches(this.hierarchy, 't', 'typeA[t]');
+        this.assertMatch(this.hierarchy, 't', 'typeA[t]');
       });
 
       test('First generic', function() {
-        this.assertMatches(this.hierarchy, 'typeA[t]', 'typeA[typeC]');
+        this.assertMatch(this.hierarchy, 'typeA[t]', 'typeA[typeC]');
       });
 
       test('Second generic', function() {
-        this.assertMatches(this.hierarchy, 'typeA[typeC]', 'typeA[t]');
+        this.assertMatch(this.hierarchy, 'typeA[typeC]', 'typeA[t]');
       });
 
       test('Both generic', function() {
-        this.assertMatches(this.hierarchy, 'typeA[t]', 'typeA[t]');
+        this.assertMatch(this.hierarchy, 'typeA[t]', 'typeA[t]');
       });
 
       test('Same param generic', function() {
-        this.assertMatches(this.hierarchy, 'typeB[t, typeC]', 'typeB[t, typeC]');
+        this.assertMatch(this.hierarchy, 'typeB[t, typeC]', 'typeB[t, typeC]');
       });
 
       test('Different params generic', function() {
-        this.assertMatches(this.hierarchy, 'typeB[t, typeC]', 'typeB[typeC, t]');
+        this.assertMatch(this.hierarchy, 'typeB[t, typeC]', 'typeB[typeC, t]');
       });
     });
   });

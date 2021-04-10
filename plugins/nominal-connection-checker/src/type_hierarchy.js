@@ -519,6 +519,10 @@ export class TypeHierarchy {
    * Returns an array of the types in the target structure that match instances
    * of the given generic type in the source structure. These matching types
    * may be generic or explicit.
+   * This function assumes that the *explicit types* in the source and target
+   * are compatible, but it does *not* assume that the given generic is only
+   * associated with a single other type, which is necessary for the *entire
+   * types* to be compatible.
    * @param {!TypeStructure} generic The generic type structure to match
    *     against.
    * @param {!TypeStructure} source The type structure to find instances of the
@@ -544,6 +548,10 @@ export class TypeHierarchy {
    * Returns an array of the types in the target structure that match instances
    * of the given generic type in the source structure. These matching types
    * may be generic or explicit.
+   * This function assumes that the *explicit types* in the source and target
+   * are compatible, but it does *not* assume that the given generic is only
+   * associated with a single other type, which is necessary for the *entire
+   * types* to be compatible.
    * @param {!TypeStructure} generic The generic type structure to match
    *     against.
    * @param {!TypeStructure} source The type structure to find instances of the
@@ -568,6 +576,10 @@ export class TypeHierarchy {
    * Returns an array of the types in the target structure that match instances
    * of the given generic type in the source structure. These matching types
    * may be generic or explicit.
+   * This function assumes that the *explicit types* in the source and target
+   * are compatible, but it does *not* assume that the given generic is only
+   * associated with a single other type, which is necessary for the *entire
+   * types* to be compatible.
    * @param {!TypeStructure} generic The generic type structure to match
    *     against.
    * @param {!TypeStructure} source The type structure to find instances of the
