@@ -481,10 +481,15 @@ export class TypeHierarchy {
     types.forEach((type) => this.validateTypeStructure_(type));
 
     const commonOuterTypes = this.getNearestCommon_(
-        types.map((type) => type.name), this.nearestCommonDescendants_);
-    // TODO: Filter out any types that do not work for the actual params,
-    //  because the types include explicit types in their fulfills. To get this
-    //  working first we need to be able to evaluate generic parameters.
+        types.map((type) => type.name), this.nearestCommonDescendants_)
+        .filter((commonType) => {
+          const commonDef = this.types_.get(commonType);
+          return types.every((type) => {
+            const struct = new TypeStructure(type.name);
+            struct.params = commonDef.getParamsForAncestor(type.name);
+            return this.typeFulfillsType(struct, type);
+          });
+        });
 
     return commonOuterTypes
         .map((commonType) => {
@@ -713,23 +718,19 @@ export class TypeHierarchy {
    * @private
    */
   getParamsListsFor_(actualTypes, commonType, getParamsForCommon) {
-    const paramsLists = [];
+    const paramsLists = this.types_.get(commonType).params().map((_) => []);
     actualTypes.forEach((typeStruct) => {
       const mappedParams = getParamsForCommon(
           this.types_.get(typeStruct.name), commonType, typeStruct.params);
+      if (!mappedParams) return;
       mappedParams.forEach((param, i) => {
-        // TODO: This doesn't work if they all evaluate to null!
-        if (!param) {
-          // Just ignore nulls, we don't have type info for these params.
-          return;
-        }
-        if (!paramsLists[i]) {
-          paramsLists[i] = [];
-        }
+        // Just ignore nulls, we don't have type info for these params.
+        if (!param) return;
         paramsLists[i].push(param);
       });
     });
-    return paramsLists;
+    return paramsLists.map((list) =>
+        list.length ? list : [duplicateStructure(this.standardGeneric_)]);
   }
 
   /**
@@ -779,6 +780,8 @@ export class TypeHierarchy {
    * descendant, or null if the actual types do not map in a valid way. If the
    * type does not have a parameter for a parameter of the descendant, the
    * element at that parameter's index will be null.
+   * This assumes that wrt explicit parameters, the given type is actually an
+   * ancestor of the given descendant type.
    * @param {!TypeDef} type The type we want to put the params in the
    *     order of the descendant for.
    * @param {string} descendantName The name of the descendant type we want
@@ -809,14 +812,10 @@ export class TypeHierarchy {
           }
           replacedParams[descParamInd] = duplicateStructure(actualParam);
           return true;
-        }
-        // TODO: This is assuming that the explicit types are compatible, but
-        //  they may not be because we're not doing any filtering. See TODO in
-        //  getNearestCommonDescedants.
+        } // Assumes explicit params are properly fulfilled.
         return mapTypes(formalParam.params, actualParam.params);
       });
     };
-
     return mapTypes(descendantToThis, actualParams) ? replacedParams : null;
   }
 }
