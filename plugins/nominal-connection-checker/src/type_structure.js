@@ -46,6 +46,42 @@ export class TypeStructure {
           return param.equals(otherStructure.params[i]);
         });
   }
+
+  /**
+   * Returns true if the callback returns true for at least one type name
+   * (generic or otherwise) contained within this type structure.
+   * @param {function(string): boolean} callback A function to test for each
+   *     type name in this type structure.
+   * @param {Object=} thisArg An option value to use as `this` when executing
+   *     the callback.
+   * @return {boolean} True if the callback returns true for at least one type
+   *     name (generic or otherwise) contained within this type structure.
+   */
+  someName(callback, thisArg = undefined) {
+    if (callback.call(thisArg, this.name)) {
+      return true;
+    }
+    // Handles early returns.
+    return this.params.some((param) => param.someName(callback, thisArg));
+  }
+
+  /**
+   * Returns true if the callback returns true for every type name (generic or
+   * otherwise) contained within this type structure.
+   * @param {function(string): boolean} callback A function to test for each
+   *     type name in this type structure.
+   * @param {Object=} thisArg An option value to use as `this` when executing
+   *     the callback.
+   * @return {boolean} True if the callback returns true for every type name
+   *     (generic or otherwise) contained within this type structure.
+   */
+  everyName(callback, thisArg = undefined) {
+    if (!callback.call(thisArg, this.name)) {
+      return false;
+    }
+    // Handles early returns.
+    return this.params.every((param) => param.everyName(callback, thisArg));
+  }
 }
 
 /**

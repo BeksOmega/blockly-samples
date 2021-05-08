@@ -1905,6 +1905,39 @@ suite('NominalConnectionChecker', function() {
   });
 
   suite('bindType', function() {
+    suite('Valid and invalid types', function() {
+      setup(function() {
+        const block = this.workspace.newBlock('static_t_main_out_value');
+
+        this.assertThrows = function(type) {
+          chai.assert.throws(() => {
+            this.checker.bindType(block, 't', type);
+          }, Error);
+        };
+        this.assertDoesNotThrow = function(type) {
+          chai.assert.doesNotThrow(() => {
+            this.checker.bindType(block, 't', type);
+          }, Error);
+        };
+      });
+
+      test('Explicit', function() {
+        this.assertDoesNotThrow('typea');
+      });
+
+      test('Explicit parameters', function() {
+        this.assertDoesNotThrow('typea[typeb, typec[typed]]');
+      });
+
+      test('Generic', function() {
+        this.assertThrows('g');
+      });
+
+      test('Generic parameters', function() {
+        this.assertThrows('typea[typeb, typec[g]]');
+      });
+    });
+
     suite('Disconnect connections', function() {
       setup(function() {
         this.assertIsConnected = function(conn) {
