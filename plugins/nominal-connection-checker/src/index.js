@@ -55,7 +55,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
     /**
      * A map of blocks to maps that associated generic types with explicit
      * types.
-     * @type {WeakMap<!Blockly.Block, Map<string, string>>}
+     * @type {WeakMap<!Blockly.Block, Map<string, !TypeStructure>>}
      * @private
      */
     this.explicitBindings_ = new WeakMap();
@@ -218,13 +218,21 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    */
   bindType(block, genericType, explicitType) {
     genericType = genericType.toLowerCase();
-    explicitType = explicitType.toLowerCase();
+    const explicitStructure = parseType(explicitType);
+    if (this.containsAnyGeneric_(explicitStructure)) {
+      throw Error('Programmatically binding generic types to other generic ' +
+          'types, or types which contain generic parameters, is not currently' +
+          'supported. Please file an issue if you have a good usecase: ' +
+          'https://github.com/google/blockly-samples/issues/new/choose');
+    }
+
+    /** @type{!Map<string, !TypeStructure>} */
     let map = this.explicitBindings_.get(block);
     if (!map) {
       map = new Map();
       this.explicitBindings_.set(block, map);
     }
-    map.set(genericType, explicitType);
+    map.set(genericType, explicitStructure);
 
     const connectionMap = [];
     /**
@@ -411,8 +419,7 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
 
     const type = this.getExternalBinding_(block, genericType);
     if (type) {
-      // TODO: Evaluate generics in bound types.
-      return [new TypeStructure(type)];
+      return [type];
     }
 
     const params = [genericType, connectionToSkip, checkOutputs, typesMap];
@@ -481,20 +488,20 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   /**
    * Returns the externally bound explicit type associated with the given
    * genericType in the context of the given block, if one exists. Otherwise,
-   * the empty string.
+   * null.
    * @param {!Blockly.Block} block The block that provides context for the
    *     explicit binding.
    * @param {string} genericType The generic type we want to get the externally
    *     bound explicit type of.
-   * @return {string} The externally bound explicit type, if one exists.
-   *     Otherwise, the empty string.
+   * @return {TypeStructure} The externally bound explicit type, if one exists.
+   *     Otherwise, null.
    * @private
    */
   getExternalBinding_(block, genericType) {
     if (this.explicitBindings_.has(block)) {
       return this.explicitBindings_.get(block).get(genericType);
     }
-    return '';
+    return null;
   }
 
   /**
@@ -588,11 +595,19 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
    * @private
    */
   containsGenericType_(sourceType, generic) {
-    if (sourceType.name == generic) {
-      return true;
-    }
-    return sourceType.params.some(
-        (param) => this.containsGenericType_(param, generic));
+    return sourceType.someName((name) => name == generic);
+  }
+
+  /**
+   * Returns true if the sourceType is a generic type, or contains any generic
+   * parameters.
+   * @param {!TypeStructure} sourceType The type to check for generics.
+   * @return {boolean} True if the sourceType is a generic type, or contains
+   *     any generic parameters.
+   * @private
+   */
+  containsAnyGeneric_(sourceType) {
+    return sourceType.someName(isGeneric);
   }
 
   /**
@@ -610,8 +625,8 @@ export class NominalConnectionChecker extends Blockly.ConnectionChecker {
   dereferenceExternalBindings_(block, structure) {
     let newStruct;
     if (isGeneric(structure.name)) {
-      newStruct = new TypeStructure(
-          this.getExternalBinding_(block, structure.name) || structure.name);
+      newStruct = this.getExternalBinding_(block, structure.name) ||
+          new TypeStructure(structure.name);
     } else {
       newStruct = new TypeStructure(structure.name);
       newStruct.params = structure.params.map((param) =>
