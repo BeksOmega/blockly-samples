@@ -2518,25 +2518,6 @@ suite('NominalConnectionChecker', function() {
         this.assertHasType(main.in1, 'dog');
       });
 
-      // TODO: Broken due to unification being broken.
-      siblingTest.skip('Removing duplicates', function() {
-        const main = this.getMain('dicttovalue');
-        const main2 = this.getMain('typestodict');
-        const main3 = this.getMain('t');
-        // Cat and dog should have two parents for this test, but removed
-        // temporarily to not break other tests.
-        const dogOut = this.getInnerOutput('dog');
-        const catOut = this.getInnerOutput('cat');
-        const catOut2 = this.getInnerOutput('cat');
-        main.in1.connect(main2.out);
-        main2.in1.connect(main3.out);
-        main2.in2.connect(catOut);
-        main3.in1.connect(dogOut);
-        main3.in2.connect(catOut2);
-
-        this.assertBlockHasType(main.block, 'v', 'cat');
-      });
-
       runSiblingTests();
 
       suite('Parent explicit', function() {
