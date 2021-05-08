@@ -2483,25 +2483,6 @@ suite('NominalConnectionChecker', function() {
         this.assertHasType(main.in1, 'dog');
       });
 
-      // TODO: Broken due to unification being broken.
-      siblingTest.skip('Removing duplicates', function() {
-        const main = this.getMain('dicttovalue');
-        const main2 = this.getMain('typestodict');
-        const main3 = this.getMain('t');
-        // Cat and dog should have two parents for this test, but removed
-        // temporarily to not break other tests.
-        const dogOut = this.getInnerOutput('dog');
-        const catOut = this.getInnerOutput('cat');
-        const catOut2 = this.getInnerOutput('cat');
-        main.in1.connect(main2.out);
-        main2.in1.connect(main3.out);
-        main2.in2.connect(catOut);
-        main3.in1.connect(dogOut);
-        main3.in2.connect(catOut2);
-
-        this.assertBlockHasType(main.block, 'v', 'cat');
-      });
-
       runSiblingTests();
 
       suite('Parent explicit', function() {
@@ -3670,25 +3651,10 @@ suite('NominalConnectionChecker', function() {
         this.assertHasType(tOut, 'list[*]');
       });
 
-      // TODO: Evaluate generics in bound types.
-      //   Also add more tests.
-      twoBlockTest.skip('T = List[t], bind', function() {
-        const tOut = this.getInnerOutput('t');
-        this.bindConnection(tOut, 'list[t]');
-        this.assertHasType(tOut, 'list[*]');
-      });
-
       twoBlockTest('List[T] = List[G], block', function() {
         const listTIn = this.getOuterInput('list[t]');
         const listGOut = this.getInnerOutput('list[g]');
         listTIn.connect(listGOut);
-        this.assertHasType(listTIn, 'list[*]');
-      });
-
-      // TODO: Evaluate generics in bound types.
-      twoBlockTest.skip('List[T], T = G, bind', function() {
-        const listTIn = this.getOuterInput('list[t]');
-        this.bindConnection(listTIn, 'g');
         this.assertHasType(listTIn, 'list[*]');
       });
 
