@@ -1901,6 +1901,28 @@ suite('NominalConnectionChecker', function() {
           });
 
       runThreeBlockTests();
+
+      clearSiblingTests();
+
+      siblingTest('Insert between', function() {
+        const t = this.getMain('t');
+        const listT1 = this.getMain('list[t]');
+        const listT2 = this.getMain('list[t]');
+        const listT3 = this.getMain('list[t]');
+        const dogOut1 = this.getInnerOutput('dog');
+        const dogOut2 = this.getInnerOutput('dog');
+
+        t.in1.connect(listT1.out);
+        t.in2.connect(listT2.out);
+        listT1.in1.connect(dogOut1);
+        listT2.in1.connect(dogOut2);
+
+        t.in2.connect(listT3.out);
+        this.assertCanConnect(listT3.in1, listT2.out);
+        listT3.in1.connect(listT2.out);
+      });
+
+      runSiblingTests();
     });
   });
 
