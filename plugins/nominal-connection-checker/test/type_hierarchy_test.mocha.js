@@ -10296,7 +10296,6 @@ suite('TypeHierarchy', function() {
               },
               'typeD': { },
             });
-            console.log('asserting');
             this.assertNoNearestCommonDescendants(
                 hierarchy,
                 ['typeC[typeD]', 'typeA[typeD, typeD]']);

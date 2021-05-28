@@ -1528,7 +1528,6 @@ suite('Hierarchy Validation', function() {
     const conflictMsg = 'The param name %s in %s conflicts with the ' +
         'param(s) [%s]';
     test('Param conflicts once', function() {
-      this.errorStub.callsFake((...params) => console.log(params));
       validateHierarchy({
         'typeA': {
           'params': [

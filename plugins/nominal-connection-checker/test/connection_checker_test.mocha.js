@@ -785,7 +785,6 @@ suite('NominalConnectionChecker', function() {
           t2.in1.connect(typeCOut);
           t2.in2.connect(typeDOut);
 
-          console.log('asserting');
           this.assertCanConnect(t.in2, t2.out);
         });
 
@@ -3349,7 +3348,6 @@ suite('NominalConnectionChecker', function() {
               }
 
               // Without proper filtering this could be ['typeb', 'typea'].
-              console.log('asserting');
               this.assertHasType(t1.out, ['typeb']);
             });
 
