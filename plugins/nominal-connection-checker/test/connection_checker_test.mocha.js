@@ -785,7 +785,6 @@ suite('NominalConnectionChecker', function() {
           t2.in1.connect(typeCOut);
           t2.in2.connect(typeDOut);
 
-          console.log('asserting');
           this.assertCanConnect(t.in2, t2.out);
         });
 
@@ -2179,22 +2178,10 @@ suite('NominalConnectionChecker', function() {
         this.assertHasType(tOut, 'list[*]');
       });
 
-      twoBlockTest.skip('T = List[T], bind', function() {
-        const tIn = this.getOuterInput('t');
-        this.bindConnection(tIn, 'list[t]');
-        this.assertHasType(tIn, 'list[*]');
-      });
-
       twoBlockTest('List[T] = List[G], block', function() {
         const listTIn = this.getOuterInput('list[t]');
         const listGOut = this.getInnerOutput('list[g]');
         listTIn.connect(listGOut);
-        this.assertNoType(listTIn);
-      });
-
-      twoBlockTest.skip('List[T], T = G, bind', function() {
-        const listTIn = this.getOuterInput('list[t]');
-        this.bindConnection(listTIn, 'g');
         this.assertNoType(listTIn);
       });
 
@@ -3314,7 +3301,6 @@ suite('NominalConnectionChecker', function() {
               }
 
               // Without proper filtering this could be ['typeb', 'typea'].
-              console.log('asserting');
               this.assertHasType(t1.out, ['typeb']);
             });
 
