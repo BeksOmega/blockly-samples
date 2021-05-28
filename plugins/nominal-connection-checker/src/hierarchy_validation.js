@@ -50,6 +50,7 @@ export function validateHierarchy(hierarchyDef) {
   checkSupersParsing(hierarchyDef);
   checkSupersDefined(hierarchyDef);
   checkDupeSupers(hierarchyDef);
+  checkDupeAncestors(hierarchyDef);
   checkSuperParamsDefined(hierarchyDef);
   checkSuperNumParamsCorrect(hierarchyDef);
   checkSuperParamVariancesCompatible(hierarchyDef);
@@ -268,6 +269,124 @@ function checkDupeSupers(hierarchyDef) {
     }
     for (const [, casedName] of supersSeenMultiple) {
       console.error(errorMsg, type, casedName);
+    }
+  }
+}
+
+/**
+ * Checks the hierarchy def for any types which fulfill a type that has already
+ * been fulfilled by one of the types ancestors.
+ * We could maybe support this behavior? But I don't think the extra complexity
+ * is worth the value added at this time. And many nominally typed languages
+ * don't support this anyway, because they have type erasure
+ * (eg Java, Kotlin, etc).
+ * @param {!Object} hierarchyDef The definition of the type hierarchy.
+ */
+function checkDupeAncestors(hierarchyDef) {
+  const errorMsg = `The type %s fulfilled by type %s is already fulfilled by
+one of %s parents, %s`;
+
+  /**
+   * Recursively check if any of the supers in superNames are also fulfilled
+   * by the given typeInfo or any of the types it fulfills.
+   * @param {string} typeName The name of the type we want to check for
+   *     duplicating fulfills.
+   * @param {!Array<String>} currentTraversal An array of all the types that
+   *     have been previously visited down this path of the type graph.
+   * @param {!Map<string, !Object>} typesMap A map of caseless type names to
+   *     the info for those types.
+   * @param {string} baseTypeName The name of the base type we are looking at
+   *     the supers of.
+   * @param {!Set<string>} superNames A set of caseless type names fulfilled by
+   *     the baseType.
+   * @param {!Map<string, string>} caselessToCased A map from caseless type
+   *     names to their cased names.
+   */
+  function findDupesReq(
+      typeName,
+      currentTraversal,
+      typesMap,
+      baseTypeName,
+      superNames,
+      caselessToCased
+  ) {
+    const typeInfo = typesMap.get(typeName.toLowerCase());
+    if (!typeInfo || !typeInfo.fulfills) {
+      return;
+    }
+    for (const superType of typeInfo.fulfills) {
+      try {
+        const superName = parseType(superType, false).name;
+        const caselessName = superName.toLowerCase();
+        if (currentTraversal.some((type) => type == caselessName)) {
+          continue;
+        }
+        if (superNames.has(caselessName)) {
+          console.error(
+              errorMsg,
+              caselessToCased.get(caselessName),
+              baseTypeName,
+              baseTypeName,
+              typeName);
+        }
+        currentTraversal.push(caselessName);
+        findDupesReq(
+            superName,
+            currentTraversal,
+            typesMap,
+            baseTypeName,
+            superNames,
+            caselessToCased);
+        currentTraversal.pop();
+      } catch (e) {
+        if (!(e instanceof TypeParseError)) {
+          throw e;
+        } // Otherwise it will have been handled by our specific check.
+      }
+    }
+  }
+
+  // Maps caseless type names to their type info.
+  const typesMap = new Map();
+  for (const type of Object.keys(hierarchyDef)) {
+    typesMap.set(type.toLowerCase(), hierarchyDef[type]);
+  }
+
+  for (const type of Object.keys(hierarchyDef)) {
+    const typeInfo = hierarchyDef[type];
+    if (!typeInfo.fulfills || !Array.isArray(typeInfo.fulfills)) {
+      continue;
+    }
+    const superNames = new Set();
+    const caselessToCased = new Map();
+    for (const superType of typeInfo.fulfills) {
+      try {
+        const superName = parseType(superType, false).name;
+        const caselessName = superName.toLowerCase();
+        superNames.add(caselessName);
+        caselessToCased.set(caselessName, superName);
+      } catch (e) {
+        if (!(e instanceof TypeParseError)) {
+          throw e;
+        } // Otherwise it will have been handled by our specific check.
+      }
+    }
+    for (const superType of typeInfo.fulfills) {
+      try {
+        const superName = parseType(superType, false).name;
+        const caselessName = superName.toLowerCase();
+        findDupesReq(
+            superName,
+            [type.toLowerCase(), caselessName],
+            typesMap,
+            type,
+            superNames,
+            caselessToCased);
+      } catch (e) {
+        if (!(e instanceof TypeParseError)) {
+          throw e;
+        } // Otherwise it will have been handled by our specific check.
+      }
     }
   }
 }

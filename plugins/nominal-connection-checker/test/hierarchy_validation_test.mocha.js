@@ -1618,11 +1618,153 @@ suite('Hierarchy Validation', function() {
     });
   });
 
+  suite('Duplicate ancestors', function() {
+    const errorMsg = `The type %s fulfilled by type %s is already fulfilled by
+one of %s parents, %s`;
+
+    test('No params', function() {
+      validateHierarchy({
+        'typeA': {},
+        'typeB': {
+          'fulfills': ['typeA'],
+        },
+        'typeC': {
+          'fulfills': ['typeB', 'typeA'],
+        },
+      });
+      chai.assert.isTrue(this.errorStub.calledOnce);
+      chai.assert.isTrue(this.errorStub.calledWith(
+          errorMsg, 'typeA', 'typeC', 'typeC', 'typeB'));
+    });
+
+    test('Deep no params', function() {
+      validateHierarchy({
+        'typeA': {},
+        'typeB': {
+          'fulfills': ['typeA'],
+        },
+        'typeC': {
+          'fulfills': ['typeB'],
+        },
+        'typeD': {
+          'fulfills': ['typeC'],
+        },
+        'typeE': {
+          'fulfills': ['typeD'],
+        },
+        'typeF': {
+          'fulfills': ['typeE', 'typeA'],
+        },
+      });
+      chai.assert.isTrue(this.errorStub.calledOnce);
+      chai.assert.isTrue(this.errorStub.calledWith(
+          errorMsg, 'typeA', 'typeF', 'typeF', 'typeB'));
+    });
+
+    test('Multiple dupes in same type', function() {
+      validateHierarchy({
+        'typeA': {},
+        'typeB': {},
+        'typeC': {
+          'fulfills': ['typeA', 'typeB'],
+        },
+        'typeD': {
+          'fulfills': ['typeC', 'typeA', 'typeB'],
+        },
+      });
+      chai.assert.isTrue(this.errorStub.calledTwice);
+      chai.assert.isTrue(this.errorStub.calledWith(
+          errorMsg, 'typeA', 'typeD', 'typeD', 'typeC'));
+      chai.assert.isTrue(this.errorStub.calledWith(
+          errorMsg, 'typeB', 'typeD', 'typeD', 'typeC'));
+    });
+
+    test('Multiple dupes in different types', function() {
+      validateHierarchy({
+        'typeA': {},
+        'typeB': {},
+        'typeC': {
+          'fulfills': ['typeA', 'typeB'],
+        },
+        'typeD': {
+          'fulfills': ['typeC', 'typeA'],
+        },
+        'typeE': {
+          'fulfills': ['typeD', 'typeB'],
+        },
+      });
+      chai.assert.isTrue(this.errorStub.calledTwice);
+      chai.assert.isTrue(this.errorStub.calledWith(
+          errorMsg, 'typeA', 'typeD', 'typeD', 'typeC'));
+      chai.assert.isTrue(this.errorStub.calledWith(
+          errorMsg, 'typeB', 'typeE', 'typeE', 'typeC'));
+    });
+
+    test('Multiple dupes in same and different', function() {
+      validateHierarchy({
+        'typeA': {},
+        'typeB': {},
+        'typeC': {
+          'fulfills': ['typeA', 'typeB'],
+        },
+        'typeD': {
+          'fulfills': ['typeC', 'typeA'],
+        },
+        'typeE': {
+          'fulfills': ['typeD', 'typeB', 'typeA'],
+        },
+      });
+      chai.assert.equal(this.errorStub.callCount, 4);
+      chai.assert.isTrue(this.errorStub.calledWith(
+          errorMsg, 'typeA', 'typeD', 'typeD', 'typeC'));
+      chai.assert.isTrue(this.errorStub.calledWith(
+          errorMsg, 'typeB', 'typeE', 'typeE', 'typeC'));
+      chai.assert.isTrue(this.errorStub.calledWith(
+          errorMsg, 'typeA', 'typeE', 'typeE', 'typeD'));
+      chai.assert.isTrue(this.errorStub.calledWith(
+          errorMsg, 'typeA', 'typeE', 'typeE', 'typeC'));
+    });
+
+    test('With different params', function() {
+      validateHierarchy({
+        'typeA': {
+          'params': [
+            {
+              'name': 'A',
+              'variance': 'contra',
+            },
+          ],
+        },
+        'typeB': {
+          'fulfills': ['typeA[typeD]'],
+        },
+        'typeC': {
+          'fulfills': ['typeB', 'typeA[typeE]'],
+        },
+        'typeD': {},
+        'typeE': {},
+      });
+      chai.assert.isTrue(this.errorStub.calledOnce);
+      chai.assert.isTrue(this.errorStub.calledWith(
+          errorMsg, 'typeA', 'typeC', 'typeC', 'typeB'));
+    });
+  });
+
   suite('Params is array', function() {
     const error = 'The type %s provides a `params` property, but it is not an' +
         ' array';
 
     test('Array', function() {
+      validateHierarchy({
+        'typeA': {
+          'params': [],
+        },
+        'typeB': {},
+      });
+      chai.assert.isTrue(this.errorStub.notCalled);
+    });
+
+    test('With same params', function() {
       validateHierarchy({
         'typeA': {
           'params': [
