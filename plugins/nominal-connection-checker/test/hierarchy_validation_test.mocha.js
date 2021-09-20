@@ -501,14 +501,6 @@ suite('Hierarchy Validation', function() {
       chai.assert.isTrue(this.errorStub.calledWith(errorMsg, 'A'));
     });
 
-    test('"*"', function() {
-      validateHierarchy({
-        '*': { },
-      });
-      chai.assert.isTrue(this.errorStub.calledOnce);
-      chai.assert.isTrue(this.errorStub.calledWith(errorMsg, '*'));
-    });
-
     test('"1"', function() {
       validateHierarchy({
         '1': { },
@@ -519,43 +511,227 @@ suite('Hierarchy Validation', function() {
   });
 
   suite('Characters', function() {
-    setup(function() {
-      const errorMsg = 'The type %s includes an illegal %s character (\'%s\').';
+    suite('Type names', function() {
+      setup(function() {
+        const errorMsg = 'The type %s includes an illegal %s ' +
+            'character (\'%s\').';
 
-      this.assertValid = function(hierarchy) {
-        validateHierarchy(hierarchy);
-        chai.assert.isTrue(this.errorStub.notCalled);
-      };
-      this.assertInvalid = function(hierarchy, type, char, charName) {
-        validateHierarchy(hierarchy);
-        chai.assert.isTrue(this.errorStub.calledOnce);
-        chai.assert.isTrue(
-            this.errorStub.calledWith(errorMsg, type, charName, char));
-      };
+        this.assertValid = function(hierarchy) {
+          validateHierarchy(hierarchy);
+          chai.assert.isTrue(this.errorStub.notCalled);
+        };
+        this.assertInvalid = function(hierarchy, type, char, charName) {
+          validateHierarchy(hierarchy);
+          chai.assert.isTrue(this.errorStub.calledOnce);
+          chai.assert.isTrue(
+              this.errorStub.calledWith(errorMsg, type, charName, char));
+        };
+      });
+
+      test('Comma', function() {
+        this.assertInvalid({
+          'type,type': { },
+        }, 'type,type', ',', 'comma');
+      });
+
+      test('Space', function() {
+        this.assertInvalid({
+          'type type': { },
+        }, 'type type', ' ', 'space');
+      });
+
+      test('Left bracket', function() {
+        this.assertInvalid({
+          'type[': { },
+        }, 'type[', '[', 'left bracket');
+      });
+
+      test('Right bracket', function() {
+        this.assertInvalid({
+          'type]': { },
+        }, 'type]', ']', 'right bracket');
+      });
+
+      test('Less than', function() {
+        this.assertInvalid({
+          'type<type': { },
+        }, 'type<type', '<', 'less than');
+      });
+
+      test('Greater than', function() {
+        this.assertInvalid({
+          'type>type': { },
+        }, 'type>type', '>', 'greater than');
+      });
+
+      test('Colon', function() {
+        this.assertInvalid({
+          'type:': { },
+        }, 'type:', ':', 'colon');
+      });
+
+      test('Equals', function() {
+        this.assertInvalid({
+          'type=': { },
+        }, 'type=', '=', 'equals');
+      });
+
+      test('Asterisk', function() {
+        this.assertInvalid({
+          'type*': { },
+        }, 'type*', '*', 'asterisk');
+      });
+
+      test('Question mark', function() {
+        this.assertInvalid({
+          'type?': { },
+        }, 'type?', '?', 'question mark');
+      });
+
+      test('Exclamation mark', function() {
+        this.assertInvalid({
+          'type!': { },
+        }, 'type!', '!', 'exclamation mark');
+      });
     });
 
-    test('Comma', function() {
-      this.assertInvalid({
-        'type,type': { },
-      }, 'type,type', ',', 'comma');
-    });
+    suite('Parameter names', function() {
+      setup(function() {
+        const errorMsg = 'The parameter %s of %s matches an illegal %s ' +
+            'character (\'%s\').';
 
-    test('Space', function() {
-      this.assertInvalid({
-        'type type': { },
-      }, 'type type', ' ', 'space');
-    });
+        this.assertValid = function(hierarchy) {
+          validateHierarchy(hierarchy);
+          chai.assert.isTrue(this.errorStub.notCalled);
+        };
+        this.assertInvalid = function(hierarchy, param, charName) {
+          validateHierarchy(hierarchy);
+          chai.assert.isTrue(this.errorStub.calledOnce);
+          chai.assert.isTrue(this.errorStub.calledWith(
+              errorMsg, param, 'type', charName, param));
+        };
+      });
 
-    test('Left bracket', function() {
-      this.assertInvalid({
-        'type[': { },
-      }, 'type[', '[', 'left bracket');
-    });
+      test('Comma', function() {
+        this.assertInvalid({
+          'type': {
+            'params': [{
+              'name': ',',
+              'variance': 'co',
+            }],
+          },
+        }, ',', 'comma');
+      });
 
-    test('Right bracket', function() {
-      this.assertInvalid({
-        'type]': { },
-      }, 'type]', ']', 'right bracket');
+      test('Space', function() {
+        this.assertInvalid({
+          'type': {
+            'params': [{
+              'name': ' ',
+              'variance': 'co',
+            }],
+          },
+        }, ' ', 'space');
+      });
+
+      test('Left bracket', function() {
+        this.assertInvalid({
+          'type': {
+            'params': [{
+              'name': '[',
+              'variance': 'co',
+            }],
+          },
+        }, '[', 'left bracket');
+      });
+
+      test('Right bracket', function() {
+        this.assertInvalid({
+          'type': {
+            'params': [{
+              'name': ']',
+              'variance': 'co',
+            }],
+          },
+        }, ']', 'right bracket');
+      });
+
+      test('Less than', function() {
+        this.assertInvalid({
+          'type': {
+            'params': [{
+              'name': '<',
+              'variance': 'co',
+            }],
+          },
+        }, '<', 'less than');
+      });
+
+      test('Greater than', function() {
+        this.assertInvalid({
+          'type': {
+            'params': [{
+              'name': '>',
+              'variance': 'co',
+            }],
+          },
+        }, '>', 'greater than');
+      });
+
+      test('Colon', function() {
+        this.assertInvalid({
+          'type': {
+            'params': [{
+              'name': ':',
+              'variance': 'co',
+            }],
+          },
+        }, ':', 'colon');
+      });
+
+      test('Equals', function() {
+        this.assertInvalid({
+          'type': {
+            'params': [{
+              'name': '=',
+              'variance': 'co',
+            }],
+          },
+        }, '=', 'equals');
+      });
+
+      test('Asterisk', function() {
+        this.assertInvalid({
+          'type': {
+            'params': [{
+              'name': '*',
+              'variance': 'co',
+            }],
+          },
+        }, '*', 'asterisk');
+      });
+
+      test('Question mark', function() {
+        this.assertInvalid({
+          'type': {
+            'params': [{
+              'name': '?',
+              'variance': 'co',
+            }],
+          },
+        }, '?', 'question mark');
+      });
+
+      test('Exclamation mark', function() {
+        this.assertInvalid({
+          'type': {
+            'params': [{
+              'name': '!',
+              'variance': 'co',
+            }],
+          },
+        }, '!', 'exclamation mark');
+      });
     });
   });
 

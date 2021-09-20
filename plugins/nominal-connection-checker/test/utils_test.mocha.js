@@ -179,7 +179,7 @@ suite('Utils tests', function() {
   suite('isExplicitConnection', function() {
     test('Empty', function() {
       const mock = createMockConnection([]);
-      chai.assert.isFalse(isExplicitConnection(mock));
+      chai.assert.isTrue(isExplicitConnection(mock));
     });
 
     test('"a"', function() {
@@ -204,7 +204,7 @@ suite('Utils tests', function() {
 
     test('1', function() {
       const mock = createMockConnection([1]);
-      chai.assert.isFalse(isExplicitConnection(mock));
+      chai.assert.isTrue(isExplicitConnection(mock));
     });
 
     test('"LongCheck"', function() {
@@ -219,7 +219,7 @@ suite('Utils tests', function() {
 
     test('Nested', function() {
       const mock = createMockConnection([['a']]);
-      chai.assert.isFalse(isExplicitConnection(mock));
+      chai.assert.isTrue(isExplicitConnection(mock));
     });
   });
 });

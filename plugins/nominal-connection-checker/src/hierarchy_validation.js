@@ -32,6 +32,13 @@ export function validateHierarchy(hierarchyDef) {
     [' ', 'space'],
     ['[', 'left bracket'],
     [']', 'right bracket'],
+    ['<', 'less than'],
+    ['>', 'greater than'],
+    [':', 'colon'],
+    ['=', 'equals'],
+    ['*', 'asterisk'],
+    ['?', 'question mark'],
+    ['!', 'exclamation mark'],
   ]);
   checkGenerics(hierarchyDef);
   checkConflictingTypes(hierarchyDef);
@@ -671,12 +678,31 @@ function checkGenerics(hierarchyDef) {
  *     characters and english character names. Eg [',', 'comma'].
  */
 function checkCharacters(hierarchyDef, chars) {
-  const error = 'The type %s includes an illegal %s character (\'%s\').';
+  const typeMsg = 'The type %s includes an illegal %s character (\'%s\').';
+  const paramMsg = 'The parameter %s of %s matches an illegal %s ' +
+      'character (\'%s\').';
 
   for (const type of Object.keys(hierarchyDef)) {
     for (const [char, charName] of chars) {
       if (type.includes(char)) {
-        console.error(error, type, charName, char);
+        console.error(typeMsg, type, charName, char);
+      }
+    }
+  }
+
+  for (const type of Object.keys(hierarchyDef)) {
+    const typeDef = hierarchyDef[type];
+    if (!typeDef.params) {
+      continue;
+    }
+
+    for (let i = 0; i < typeDef.params.length; i++) {
+      const param = typeDef.params[i];
+      for (const [char, charName] of chars) {
+        if (param.name == char) {
+          console.error(paramMsg, param.name, type, charName, char);
+          break;
+        }
       }
     }
   }
