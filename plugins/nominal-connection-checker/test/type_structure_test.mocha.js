@@ -493,4 +493,66 @@ suite('TypeStructure', function() {
           'typeA[typeA[typeA[typeA[typeA]]]]');
     });
   });
+
+  suite('someName', function() {
+    test('True', function() {
+      const type = parseType('typea');
+      chai.assert.isTrue(type.someName((name) => name == 'typea'));
+    });
+
+    test('True in params', function() {
+      const type = parseType('typeb[typeb, typeb[typea]]');
+      chai.assert.isTrue(type.someName((name) => name == 'typea'));
+    });
+
+    test('True multiple times', function() {
+      const type = parseType('typeb[typea, typea]');
+      chai.assert.isTrue(type.someName((name) => name == 'typea'));
+    });
+
+    test('False', function() {
+      const type = parseType('typeb[typeb, typeb]');
+      chai.assert.isFalse(type.someName((name) => name == 'typea'));
+    });
+
+    test('thisArg', function() {
+      const obj = {name: 'typea'};
+      const type = parseType('typeb[typeb, typeb[typea]]');
+      const func = function(name) {
+        return name == this.name;
+      };
+      chai.assert.isTrue(type.someName(func, obj));
+    });
+  });
+
+  suite('everyName', function() {
+    test('True', function() {
+      const type = parseType('typea[typea, typea]');
+      chai.assert.isTrue(type.everyName((name) => name == 'typea'));
+    });
+
+    test('False', function() {
+      const type = parseType('typeb');
+      chai.assert.isFalse(type.everyName((name) => name == 'typea'));
+    });
+
+    test('False in params', function() {
+      const type = parseType('typea[typea, typea[typeb]]');
+      chai.assert.isFalse(type.everyName((name) => name == 'typea'));
+    });
+
+    test('False multiple times', function() {
+      const type = parseType('typea[typeb, typeb]');
+      chai.assert.isFalse(type.everyName((name) => name == 'typea'));
+    });
+
+    test('thisArg', function() {
+      const obj = {name: 'typea'};
+      const type = parseType('typea[typea, typea[typea]]');
+      const func = function(name) {
+        return name == this.name;
+      };
+      chai.assert.isTrue(type.everyName(func, obj));
+    });
+  });
 });

@@ -785,7 +785,6 @@ suite('NominalConnectionChecker', function() {
           t2.in1.connect(typeCOut);
           t2.in2.connect(typeDOut);
 
-          console.log('asserting');
           this.assertCanConnect(t.in2, t2.out);
         });
 
@@ -1901,10 +1900,65 @@ suite('NominalConnectionChecker', function() {
           });
 
       runThreeBlockTests();
+
+      clearSiblingTests();
+
+      siblingTest('Insert between', function() {
+        const t = this.getMain('t');
+        const listT1 = this.getMain('list[t]');
+        const listT2 = this.getMain('list[t]');
+        const listT3 = this.getMain('list[t]');
+        const dogOut1 = this.getInnerOutput('dog');
+        const dogOut2 = this.getInnerOutput('dog');
+
+        t.in1.connect(listT1.out);
+        t.in2.connect(listT2.out);
+        listT1.in1.connect(dogOut1);
+        listT2.in1.connect(dogOut2);
+
+        t.in2.connect(listT3.out);
+        this.assertCanConnect(listT3.in1, listT2.out);
+        listT3.in1.connect(listT2.out);
+      });
+
+      runSiblingTests();
     });
   });
 
   suite('bindType', function() {
+    suite('Valid and invalid types', function() {
+      setup(function() {
+        const block = this.workspace.newBlock('static_t_main_out_value');
+
+        this.assertThrows = function(type) {
+          chai.assert.throws(() => {
+            this.checker.bindType(block, 't', type);
+          }, Error);
+        };
+        this.assertDoesNotThrow = function(type) {
+          chai.assert.doesNotThrow(() => {
+            this.checker.bindType(block, 't', type);
+          }, Error);
+        };
+      });
+
+      test('Explicit', function() {
+        this.assertDoesNotThrow('typea');
+      });
+
+      test('Explicit parameters', function() {
+        this.assertDoesNotThrow('typea[typeb, typec[typed]]');
+      });
+
+      test('Generic', function() {
+        this.assertThrows('g');
+      });
+
+      test('Generic parameters', function() {
+        this.assertThrows('typea[typeb, typec[g]]');
+      });
+    });
+
     suite('Disconnect connections', function() {
       setup(function() {
         this.assertIsConnected = function(conn) {
@@ -2483,25 +2537,6 @@ suite('NominalConnectionChecker', function() {
         const listListDogOut = this.getInnerOutput('list[list[dog]]');
         main.in1.connect(listListDogOut);
         this.assertHasType(main.in1, 'dog');
-      });
-
-      // TODO: Broken due to unification being broken.
-      siblingTest.skip('Removing duplicates', function() {
-        const main = this.getMain('dicttovalue');
-        const main2 = this.getMain('typestodict');
-        const main3 = this.getMain('t');
-        // Cat and dog should have two parents for this test, but removed
-        // temporarily to not break other tests.
-        const dogOut = this.getInnerOutput('dog');
-        const catOut = this.getInnerOutput('cat');
-        const catOut2 = this.getInnerOutput('cat');
-        main.in1.connect(main2.out);
-        main2.in1.connect(main3.out);
-        main2.in2.connect(catOut);
-        main3.in1.connect(dogOut);
-        main3.in2.connect(catOut2);
-
-        this.assertBlockHasType(main.block, 'v', 'cat');
       });
 
       runSiblingTests();
@@ -3313,7 +3348,6 @@ suite('NominalConnectionChecker', function() {
               }
 
               // Without proper filtering this could be ['typeb', 'typea'].
-              console.log('asserting');
               this.assertHasType(t1.out, ['typeb']);
             });
 
