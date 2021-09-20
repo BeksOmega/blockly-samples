@@ -480,6 +480,11 @@ export class TypeHierarchy {
     }
     types.forEach((type) => this.validateTypeStructure_(type));
 
+    types = types.filter((type) => this.isExplicit_(type.name));
+    if (!types.length) { // All types were generic.
+      return [duplicateStructure(this.standardGeneric_)];
+    }
+
     const commonOuterTypes = this.getNearestCommon_(
         types.map((type) => type.name), this.nearestCommonDescendants_)
         .filter((commonType) => {
@@ -690,6 +695,9 @@ export class TypeHierarchy {
   getNearestCommon_(typeNames, nearestCommon) {
     return typeNames.reduce((accumulator, currType) => {
       const commonMap = nearestCommon.get(currType);
+      if (commonMap == undefined) {
+        console.log(currType, nearestCommon);
+      }
       return accumulator
           // Create copy to avoid corruption.
           .map((type) => [...commonMap.get(type)])
