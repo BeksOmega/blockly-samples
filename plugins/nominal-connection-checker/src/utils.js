@@ -92,5 +92,5 @@ export function combine([firstArray, ...[secondArray, ...rest]]) {
   const combined = firstArray
       .map((a) => secondArray.map((b) => [].concat(a, b)))
       .reduce((flat, toFlatten) => [...flat, ...toFlatten], []);
-  return this.combine_([combined, ...rest]);
+  return combine([combined, ...rest]);
 }

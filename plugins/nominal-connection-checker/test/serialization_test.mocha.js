@@ -380,7 +380,7 @@ suite('Serialization', function() {
       this.assertRoundTrip();
     });
 
-    siblingTest('Two multi mains, compatible', function() {
+    siblingTest.skip('Two multi mains, compatible', function() {
       const t1 = this.getMain('t', 't1');
       const t2 = this.getMain('t', 't2');
       const typeCOut1 = this.getInnerOutput('typeC');

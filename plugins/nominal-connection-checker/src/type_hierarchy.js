@@ -26,10 +26,6 @@ export class TypeHierarchy {
   /**
    * Constructs the TypeHierarchy, initializing it with the given hierarchyDef.
    * @param {!Object} hierarchyDef The definition of the type hierarchy.
-   * @param {!TypeStructure} genericTypeStructure Represents a generic type (in
-   *     the form of a type structure) that binding could not be found for.
-   * @param {string} genericType Represents a generic type (in the form of a
-   *     string) that a binding could not be found for.
    */
   constructor(hierarchyDef) {
     /**
