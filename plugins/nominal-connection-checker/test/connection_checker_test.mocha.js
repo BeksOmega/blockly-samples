@@ -16,7 +16,7 @@ const {
   clearTwoBlockTests, twoBlockTest, runTwoBlockTests,
   clearThreeBlockTests, threeBlockTest, runThreeBlockTests,
   clearSiblingTests, siblingTest, runSiblingTests,
-  createBlockDefs,
+  createBlockDefs, createMainBlockDefs,
 } = require('./connection_checker_test_helper.mocha');
 
 suite('NominalConnectionChecker', function() {
@@ -68,6 +68,18 @@ suite('NominalConnectionChecker', function() {
           },
         ],
       },
+      'Dict': {
+        'params': [
+          {
+            'name': 'K',
+            'variance': 'inv',
+          },
+          {
+            'name': 'V',
+            'variance': 'inv',
+          },
+        ],
+      },
     };
 
     const blockTypes = [
@@ -85,16 +97,24 @@ suite('NominalConnectionChecker', function() {
       'getterlist[flyinganimal]',
       'getterlist[dog]',
       'getterlist[bat]',
+      'getterlist[t]',
       'adderlist[animal]',
       'adderlist[mammal]',
       'adderlist[flyinganimal]',
       'adderlist[dog]',
       'adderlist[bat]',
+      'adderlist[t]',
       'list[animal]',
       'list[mammal]',
       'list[flyinganimal]',
       'list[dog]',
       'list[bat]',
+      'list[t]',
+      'list[g]',
+      'dict[dog, dog]',
+      'dict[k, dog]',
+      'dict[dog, v]',
+      'dict[k, v]',
     ];
     this.blocks = createBlockDefs(blockTypes);
     Blockly.defineBlocksWithJsonArray(this.blocks);
@@ -109,11 +129,14 @@ suite('NominalConnectionChecker', function() {
     this.workspace.connectionChecker.init(hierarchyDef);
     this.checker = this.workspace.connectionChecker;
 
-    this.bindConnection = function(conn, binding) {
-      this.checker.bindType(conn.getSourceBlock(), 'T', binding);
+    this.bindConnection = function(conn, binding, generic = 'T') {
+      this.checker.bindType(conn.getSourceBlock(), generic, binding);
     };
-    this.unbindConnection = function(conn) {
-      this.checker.unbindType(conn.getSourceBlock(), 'T');
+    this.bindType = function(block, binding, generic = 'T') {
+      this.checker.bindType(block, generic, binding);
+    };
+    this.unbindConnection = function(conn, generic = 'T') {
+      this.checker.unbindType(conn.getSourceBlock(), generic);
     };
   });
 
@@ -139,6 +162,10 @@ suite('NominalConnectionChecker', function() {
 
     suite('Bad types', function() {
       setup(function() {
+        this.badBlocks = createBlockDefs(
+            ['  dog  ', 'typeA', 'list', 'list[dog, dog]']);
+        Blockly.defineBlocksWithJsonArray(this.badBlocks);
+
         this.assertThrows = (conn1, conn2) => {
           chai.assert.throws(() => {
             this.checker.doTypeChecks(conn1, conn2);
@@ -146,31 +173,33 @@ suite('NominalConnectionChecker', function() {
         };
       });
 
+      teardown(function() {
+        for (const block of this.badBlocks) {
+          delete Blockly.Blocks[block.type];
+        }
+      });
+
       clearTwoBlockTests();
 
       twoBlockTest('Padding', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['  dog  ']));
         const dogIn = this.getOuterInput('dog');
         const paddingOut = this.getOuterInput('  dog  ');
         this.assertThrows(dogIn, paddingOut);
       });
 
       twoBlockTest('Type not defined', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['typeA']));
         const aIn = this.getOuterInput('typeA');
         const aOut = this.getInnerOutput('typeA');
         this.assertThrows(aIn, aOut);
       });
 
       twoBlockTest('Missing params', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['list']));
         const listIn = this.getOuterInput('list');
         const listOut = this.getInnerOutput('list');
         this.assertThrows(listIn, listOut);
       });
 
       twoBlockTest('Extra params', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['list[dog, dog]']));
         const listIn = this.getOuterInput('list[dog, dog]');
         const listOut = this.getInnerOutput('list[dog, dog]');
         this.assertThrows(listIn, listOut);
@@ -339,7 +368,7 @@ suite('NominalConnectionChecker', function() {
       runTwoBlockTests();
     });
 
-    suite('Multiple inputs on generics', function() {
+    suite('Sibling compatibility with generics', function() {
       setup(function() {
         const hierarchy = {
           'typeA': {},
@@ -482,7 +511,7 @@ suite('NominalConnectionChecker', function() {
       runSiblingTests();
     });
 
-    suite('Multiple explicit types on generics', function() {
+    suite('Multiple common ancestor types with generics', function() {
       setup(function() {
         const hierarchy = {
           'typeA': {},
@@ -708,16 +737,32 @@ suite('NominalConnectionChecker', function() {
         chai.assert.isEmpty(explicitTypes,
             'Expected ' + conn.name + ' to not have a type.');
       };
-      this.assertHasType = function(conn, type) {
+      this.assertHasType = function(conn, explicit, generic = 'T') {
         const explicitTypes = this.checker.getExplicitTypes(
-            conn.getSourceBlock(), 'T');
-        chai.assert.include(explicitTypes, type,
-            'Expected ' + conn.name + ' to have type ' + type + '.');
+            conn.getSourceBlock(), generic);
+        chai.assert.include(explicitTypes, explicit,
+            'Expected ' + conn.name + ' to have type ' + explicit + '.');
+      };
+      this.assertBlockHasType = function(block, generic, explicit) {
+        const explicitTypes = this.checker.getExplicitTypes(block, generic);
+        chai.assert.include(explicitTypes, explicit,
+            'Expected ' + generic + ' to have type ' + explicit + '.');
+      };
+      this.assertBlockDoesNotHaveType = function(block, generic) {
+        const explicitTypes = this.checker.getExplicitTypes(block, generic);
+        chai.assert.isArray(explicitTypes,
+            'Expected getExplicitTypes to return an array.');
+        chai.assert.isEmpty(explicitTypes,
+            'Expected ' + generic + ' to not have a type.');
       };
     });
 
     suite('Bad types', function() {
       setup(function() {
+        this.badBlocks = createBlockDefs(
+            ['  dog  ', 'typeA', 'list', 'list[dog, dog]']);
+        Blockly.defineBlocksWithJsonArray(this.badBlocks);
+
         this.assertThrows = (conn) => {
           chai.assert.throws(() => {
             this.checker.getExplicitTypes(conn.getSourceBlock(), 'T');
@@ -725,10 +770,15 @@ suite('NominalConnectionChecker', function() {
         };
       });
 
+      teardown(function() {
+        for (const block of this.badBlocks) {
+          delete Blockly.Blocks[block.type];
+        }
+      });
+
       clearTwoBlockTests();
 
       twoBlockTest('Padding', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['  dog  ']));
         const dogIn = this.getOuterInput('  dog  ');
         const tOut = this.getInnerOutput('t');
         dogIn.connect(tOut);
@@ -736,7 +786,6 @@ suite('NominalConnectionChecker', function() {
       });
 
       twoBlockTest('Type not defined', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['typeA']));
         const aIn = this.getOuterInput('typeA');
         const tOut = this.getInnerOutput('t');
         aIn.connect(tOut);
@@ -744,7 +793,6 @@ suite('NominalConnectionChecker', function() {
       });
 
       twoBlockTest('Missing params', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['list']));
         const listIn = this.getOuterInput('list');
         const tOut = this.getInnerOutput('t');
         listIn.connect(tOut);
@@ -752,7 +800,6 @@ suite('NominalConnectionChecker', function() {
       });
 
       twoBlockTest('Extra params', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['list[dog, dog]']));
         const listIn = this.getOuterInput('list[dog, dog]');
         const tOut = this.getInnerOutput('t');
         listIn.connect(tOut);
@@ -773,6 +820,11 @@ suite('NominalConnectionChecker', function() {
       twoBlockTest('Inner explicit', function() {
         const dogOut = this.getInnerOutput('dog');
         this.assertNoType(dogOut);
+      });
+
+      twoBlockTest('Param explicit', function() {
+        const dogListOut = this.getInnerOutput('list[dog]');
+        this.assertNoType(dogListOut);
       });
 
       twoBlockTest('Outer unbound', function() {
@@ -798,6 +850,135 @@ suite('NominalConnectionChecker', function() {
       });
 
       runTwoBlockTests();
+    });
+
+    suite('Parameters', function() {
+      setup(function() {
+        this.genericParamBlocks = [];
+        this.genericParamBlocks.push(
+            ...createMainBlockDefs('typetolist', 'list[t]', 't'));
+        Blockly.defineBlocksWithJsonArray(this.genericParamBlocks);
+      });
+
+      teardown(function() {
+        for (const block of this.genericParamBlocks) {
+          delete Blockly.Blocks[block.type];
+        }
+      });
+
+      clearTwoBlockTests();
+
+      twoBlockTest('T = List[Dog], block - child', function() {
+        const tIn = this.getOuterInput('t');
+        const listDogOut = this.getInnerOutput('list[dog]');
+        tIn.connect(listDogOut);
+        this.assertHasType(tIn, 'list[dog]');
+      });
+
+      twoBlockTest('T = List[Dog], block - parent', function() {
+        const listDogIn = this.getOuterInput('list[dog]');
+        const tOut = this.getInnerOutput('t');
+        listDogIn.connect(tOut);
+        this.assertHasType(tOut, 'list[dog]');
+      });
+
+      twoBlockTest('T = List[Dog], bound', function() {
+        const tIn = this.getOuterInput('t');
+        this.bindConnection(tIn, 'list[dog]');
+        this.assertHasType(tIn, 'list[dog]');
+      });
+
+      twoBlockTest('T = List[T], block - child', function() {
+        const tIn = this.getOuterInput('t');
+        const listTOut = this.getInnerOutput('list[t]');
+        tIn.connect(listTOut);
+        this.assertHasType(tIn, 'list[*]');
+      });
+
+      twoBlockTest('T = List[T], block - parent', function() {
+        const listTIn = this.getOuterInput('list[t]');
+        const tOut = this.getInnerOutput('t');
+        listTIn.connect(tOut);
+        this.assertHasType(tOut, 'list[*]');
+      });
+
+      twoBlockTest.skip('T = List[T], bound', function() {
+        const tIn = this.getOuterInput('t');
+        this.bindConnection(tIn, 'list[t]');
+        this.assertHasType(tIn, 'list[*]');
+      });
+
+      twoBlockTest('List[T] Unbound', function() {
+        const tIn = this.getInnerOutput('list[t]');
+        this.assertNoType(tIn);
+      });
+
+      twoBlockTest('List[T] = T, block - child', function() {
+        const listTIn = this.getOuterInput('list[t]');
+        const tOut = this.getInnerOutput('t');
+        listTIn.connect(tOut);
+        this.assertNoType(listTIn);
+      }); // Cannot replicate w/ bind.
+
+      twoBlockTest('List[T] = T, block - parent', function() {
+        const tIn = this.getOuterInput('t');
+        const listTOut = this.getInnerOutput('list[t]');
+        tIn.connect(listTOut);
+        this.assertNoType(listTOut);
+      }); // Cannot replicate w/ bind.
+
+      twoBlockTest('List[T] = List[G], block - child', function() {
+        const listTIn = this.getOuterInput('list[t]');
+        const listGOut = this.getInnerOutput('list[g]');
+        listTIn.connect(listGOut);
+        this.assertNoType(listTIn);
+      });
+
+      twoBlockTest('List[T] = List[G], block - parent', function() {
+        const listGIn = this.getOuterInput('list[g]');
+        const listTOut = this.getInnerOutput('list[t]');
+        listGIn.connect(listTOut);
+        this.assertNoType(listGIn);
+      });
+
+      twoBlockTest.skip('List[T] = List[G], bind', function() {
+        const listTIn = this.getOuterInput('list[t]');
+        this.bindConnection(listTIn, 'g');
+        this.assertNoType(listTIn);
+      });
+
+      twoBlockTest('List[T] = List[Dog], block - child', function() {
+        const listTIn = this.getOuterInput('list[t]');
+        const listDogOut = this.getInnerOutput('list[dog]');
+        listTIn.connect(listDogOut);
+        this.assertHasType(listTIn, 'dog');
+      });
+
+      twoBlockTest('List[T] = List[Dog], block - parent', function() {
+        const listDogIn = this.getOuterInput('list[dog]');
+        const listTOut = this.getInnerOutput('list[t]');
+        listDogIn.connect(listTOut);
+        this.assertHasType(listTOut, 'dog');
+      });
+
+      runTwoBlockTests();
+
+      clearThreeBlockTests();
+
+      threeBlockTest('typetolist, T = Dog, block', function() {
+        const t = this.getMain('typetolist');
+        const dogOut = this.getInnerOutput('dog');
+        t.in.connect(dogOut);
+        this.assertHasType(t.in, 'dog');
+      });
+
+      threeBlockTest('typetolist, T = Dog, bound', function() {
+        const t = this.getMain('typetolist');
+        this.bindConnection(t.in, 'dog');
+        this.assertHasType(t.in, 'dog');
+      });
+
+      runThreeBlockTests();
     });
 
     suite('Flow through connections', function() {
@@ -1022,6 +1203,281 @@ suite('NominalConnectionChecker', function() {
       });
 
       runSiblingTests();
+    });
+
+    suite('Flow through generic parameterized types', function() {
+      setup(function() {
+        this.genericParamBlocks = [];
+        this.genericParamBlocks.push(
+            ...createMainBlockDefs('typetolist', 'list[t]', 't'));
+        this.genericParamBlocks.push(
+            ...createMainBlockDefs('listtotype', 't', 'list[t]'));
+        this.genericParamBlocks.push(
+            ...createMainBlockDefs('typestodict', 'dict[k, v]', 'k', 'v'));
+        this.genericParamBlocks.push(
+            ...createMainBlockDefs('dicttokey', 'k', 'dict[k, v]'));
+        this.genericParamBlocks.push(
+            ...createMainBlockDefs('dicttovalue', 'v', 'dict[k, v]'));
+        this.genericParamBlocks.push(
+            ...createBlockDefs(['dict[dog, cat]']));
+        this.genericParamBlocks.push(...createMainBlockDefs(
+            'diffparams', 'list[a]', 'list[a]', 'list[b]'));
+        this.genericParamBlocks.push(
+            ...createBlockDefs(['list[list[t]]']));
+        this.genericParamBlocks.push(
+            ...createBlockDefs(['list[list[dog]]']));
+        this.genericParamBlocks.push(...createMainBlockDefs(
+            'difftypeslist', 'getterlist[a]', 'getterlist[a]', 'dict[a, b]'));
+        this.genericParamBlocks.push(...createMainBlockDefs(
+            'difftypesdict', 'dict[a, b]', 'getterlist[a]', 'dict[a, b]'));
+        Blockly.defineBlocksWithJsonArray(this.genericParamBlocks);
+      });
+
+      teardown(function() {
+        for (const block of this.genericParamBlocks) {
+          delete Blockly.Blocks[block.type];
+        }
+      });
+
+      clearSiblingTests();
+
+      siblingTest('Different list params not interfering', function() {
+        const main = this.getMain('diffparams');
+        const listDogOut = this.getInnerOutput('list[dog]');
+        main.in1.connect(listDogOut);
+        this.assertBlockHasType(main.block, 'a', 'dog');
+        this.assertBlockDoesNotHaveType(main.block, 'b');
+      });
+
+      siblingTest('Deeply nested params', function() {
+        const main = this.getMain('list[list[t]]');
+        const listListDogOut = this.getInnerOutput('list[list[dog]]');
+        main.in1.connect(listListDogOut);
+        this.assertHasType(main.in1, 'dog');
+      });
+
+      // TODO: Broken due to unification being broken.
+      siblingTest.skip('Removing duplicates', function() {
+        const main = this.getMain('dicttovalue');
+        const main2 = this.getMain('typestodict');
+        const main3 = this.getMain('t');
+        // Cat and dog should have two parents for this test, but removed
+        // temporarily to not break other tests.
+        const dogOut = this.getInnerOutput('dog');
+        const catOut = this.getInnerOutput('cat');
+        const catOut2 = this.getInnerOutput('cat');
+        main.in1.connect(main2.out);
+        main2.in1.connect(main3.out);
+        main2.in2.connect(catOut);
+        main3.in1.connect(dogOut);
+        main3.in2.connect(catOut2);
+
+        this.assertBlockHasType(main.block, 'v', 'cat');
+      });
+
+      runSiblingTests();
+
+      suite('Wrapping and unwrapping types', function() {
+        suite('Child explicit', function() {
+          clearThreeBlockTests();
+
+          threeBlockTest('Dog to List[Dog]', function() {
+            const tIn = this.getOuterInput('t');
+            const main = this.getMain('typetolist');
+            const dogOut = this.getInnerOutput('dog');
+            main.in.connect(dogOut);
+
+            this.assertHasType(main.in, 'dog');
+
+            tIn.connect(main.out);
+            this.assertHasType(tIn, 'list[dog]');
+          });
+
+          threeBlockTest('List[Dog] to Dog', function() {
+            const tIn = this.getOuterInput('t');
+            const main = this.getMain('listtotype');
+            const dogListOut = this.getInnerOutput('list[dog]');
+            main.in.connect(dogListOut);
+
+            this.assertHasType(main.in, 'dog');
+
+            tIn.connect(main.out);
+            this.assertHasType(tIn, 'dog');
+          });
+
+          runThreeBlockTests();
+
+          clearSiblingTests();
+
+          siblingTest('Dog and Cat to Dict[Dog, Cat]', function() {
+            const tIn = this.getOuterInput('t');
+            const main = this.getMain('typestodict');
+            const dogOut = this.getInnerOutput('dog');
+            const catOut = this.getInnerOutput('cat');
+            main.in1.connect(dogOut);
+            main.in2.connect(catOut);
+
+            this.assertHasType(main.in1, 'dog', 'k');
+            this.assertHasType(main.in2, 'cat', 'v');
+
+            tIn.connect(main.out);
+            this.assertHasType(tIn, 'dict[dog, cat]');
+          });
+
+          siblingTest('Dict[Dog, Cat] to Dog', function() {
+            const tIn = this.getOuterInput('t');
+            const main = this.getMain('dicttokey');
+            const dictOut = this.getInnerOutput('dict[dog, cat]');
+            main.in1.connect(dictOut);
+
+            this.assertBlockHasType(main.block, 'k', 'dog');
+            this.assertBlockHasType(main.block, 'v', 'cat');
+
+            tIn.connect(main.out);
+            this.assertHasType(tIn, 'dog');
+          });
+
+          siblingTest('Dict[Dog, Cat] to Cat', function() {
+            const tIn = this.getOuterInput('t');
+            const main = this.getMain('dicttovalue');
+            const dictOut = this.getInnerOutput('dict[dog, cat]');
+            main.in1.connect(dictOut);
+
+            this.assertBlockHasType(main.block, 'k', 'dog');
+            this.assertBlockHasType(main.block, 'v', 'cat');
+
+            tIn.connect(main.out);
+            this.assertHasType(tIn, 'cat');
+          });
+
+          runSiblingTests();
+        });
+
+        suite('Child bound', function() {
+          clearThreeBlockTests();
+
+          threeBlockTest('Dog to List[Dog]', function() {
+            const tIn = this.getOuterInput('t');
+            const main = this.getMain('typetolist');
+            const tOut = this.getInnerOutput('t');
+            this.bindConnection(tOut, 'dog');
+            main.in.connect(tOut);
+
+            this.assertHasType(main.in, 'dog');
+
+            tIn.connect(main.out);
+            this.assertHasType(tIn, 'list[dog]');
+          });
+
+          threeBlockTest('List[Dog] to Dog', function() {
+            const tIn = this.getOuterInput('t');
+            const main = this.getMain('listtotype');
+            const tListOut = this.getInnerOutput('list[t]');
+            this.bindConnection(tListOut, 'dog');
+            main.in.connect(tListOut);
+
+            this.assertHasType(main.in, 'dog');
+
+            tIn.connect(main.out);
+            this.assertHasType(tIn, 'dog');
+          });
+
+          runThreeBlockTests();
+
+          clearSiblingTests();
+
+          siblingTest('Dog and Cat to Dict[Dog, Cat]', function() {
+            const tIn = this.getOuterInput('t');
+            const main = this.getMain('typestodict');
+            const tOut1 = this.getInnerOutput('t');
+            this.bindConnection(tOut1, 'dog');
+            const tOut2 = this.getInnerOutput('t');
+            this.bindConnection(tOut2, 'cat');
+            main.in1.connect(tOut1);
+            main.in2.connect(tOut2);
+
+            this.assertHasType(main.in1, 'dog', 'k');
+            this.assertHasType(main.in2, 'cat', 'v');
+
+            tIn.connect(main.out);
+            this.assertHasType(tIn, 'dict[dog, cat]');
+          });
+
+          siblingTest('Dict[Dog, Cat] to Dog', function() {
+            const tIn = this.getOuterInput('t');
+            const main = this.getMain('dicttokey');
+            const dictOut = this.getInnerOutput('dict[k, v]');
+            this.bindType(dictOut.block, 'dog', 'k');
+            this.bindType(dictOut.block, 'cat', 'v');
+            main.in1.connect(dictOut);
+
+            this.assertBlockHasType(main.block, 'k', 'dog');
+            this.assertBlockHasType(main.block, 'v', 'cat');
+
+            tIn.connect(main.out);
+            this.assertHasType(tIn, 'dog');
+          });
+
+          siblingTest('Dict[Dog, Cat] to Cat', function() {
+            const tIn = this.getOuterInput('t');
+            const main = this.getMain('dicttovalue');
+            const dictOut = this.getInnerOutput('dict[k, v]');
+            this.bindType(dictOut.block, 'dog', 'k');
+            this.bindType(dictOut.block, 'cat', 'v');
+            main.in1.connect(dictOut);
+
+            this.assertBlockHasType(main.block, 'k', 'dog');
+            this.assertBlockHasType(main.block, 'v', 'cat');
+
+            tIn.connect(main.out);
+            this.assertHasType(tIn, 'cat');
+          });
+
+          runSiblingTests();
+        });
+      });
+
+      suite('Different types sharing params', function() {
+        clearSiblingTests();
+
+        siblingTest('List out, list attached', function() {
+          const tIn = this.getOuterInput('t');
+          const main = this.getMain('difftypeslist');
+          const listDogOut = this.getInnerOutput('list[dog]');
+          main.in1.connect(listDogOut);
+          tIn.connect(main.out);
+          this.assertHasType(tIn, 'getterlist[dog]');
+        });
+
+        siblingTest('List out, dict attached', function() {
+          const tIn = this.getOuterInput('t');
+          const main = this.getMain('difftypeslist');
+          const dictOut = this.getInnerOutput('dict[dog, cat]');
+          main.in2.connect(dictOut);
+          tIn.connect(main.out);
+          this.assertHasType(tIn, 'getterlist[dog]');
+        });
+
+        siblingTest('Dict out, list attached', function() {
+          const tIn = this.getOuterInput('t');
+          const main = this.getMain('difftypesdict');
+          const listDogOut = this.getInnerOutput('list[dog]');
+          main.in1.connect(listDogOut);
+          tIn.connect(main.out);
+          this.assertHasType(tIn, 'dict[dog, *]');
+        });
+
+        siblingTest('Dict out, dict attached', function() {
+          const tIn = this.getOuterInput('t');
+          const main = this.getMain('difftypesdict');
+          const dictOut = this.getInnerOutput('dict[dog, cat]');
+          main.in2.connect(dictOut);
+          tIn.connect(main.out);
+          this.assertHasType(tIn, 'dict[dog, cat]');
+        });
+
+        runSiblingTests();
+      });
     });
 
     suite('Flow through different generics', function() {
@@ -1522,10 +1978,9 @@ suite('NominalConnectionChecker', function() {
     setup(function() {
       this.assertNoType = function(conn) {
         const explicitTypes = this.checker.getExplicitTypesOfConnection(conn);
-        chai.assert.isArray(explicitTypes,
-            'Expected getExplicitTypesOfConnection to return an array.');
-        chai.assert.isEmpty(explicitTypes,
-            'Expected ' + conn.name + ' to not have a type.');
+        chai.assert.deepEqual(explicitTypes, ['*'],
+            'Expected the check of ' + conn.name + ' to evaluate to the ' +
+            'TRUE_GENERIC_TYPE');
       };
       this.assertHasType = function(conn, type) {
         chai.assert.include(
@@ -1590,6 +2045,10 @@ suite('NominalConnectionChecker', function() {
 
     suite('Bad types', function() {
       setup(function() {
+        this.badBlocks = createBlockDefs(
+            ['  dog  ', 'typeA', 'list', 'list[dog, dog]']);
+        Blockly.defineBlocksWithJsonArray(this.badBlocks);
+
         this.assertThrows = (conn) => {
           chai.assert.throws(() => {
             this.checker.getExplicitTypesOfConnection(conn);
@@ -1597,10 +2056,15 @@ suite('NominalConnectionChecker', function() {
         };
       });
 
+      teardown(function() {
+        for (const block of this.badBlocks) {
+          delete Blockly.Blocks[block.type];
+        }
+      });
+
       clearTwoBlockTests();
 
       twoBlockTest('Padding', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['  dog  ']));
         const dogIn = this.getOuterInput('  dog  ');
         const tOut = this.getInnerOutput('t');
         dogIn.connect(tOut);
@@ -1608,7 +2072,6 @@ suite('NominalConnectionChecker', function() {
       });
 
       twoBlockTest('Type not defined', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['typeA']));
         const aIn = this.getOuterInput('typeA');
         const tOut = this.getInnerOutput('t');
         aIn.connect(tOut);
@@ -1616,7 +2079,6 @@ suite('NominalConnectionChecker', function() {
       });
 
       twoBlockTest('Missing params', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['list']));
         const listIn = this.getOuterInput('list');
         const tOut = this.getInnerOutput('t');
         listIn.connect(tOut);
@@ -1624,11 +2086,133 @@ suite('NominalConnectionChecker', function() {
       });
 
       twoBlockTest('Extra params', function() {
-        Blockly.defineBlocksWithJsonArray(createBlockDefs(['list[dog, dog]']));
         const listIn = this.getOuterInput('list[dog, dog]');
         const tOut = this.getInnerOutput('t');
         listIn.connect(tOut);
         this.assertThrows(tOut);
+      });
+
+      runTwoBlockTests();
+    });
+
+    suite('Parameters', function() {
+      clearTwoBlockTests();
+
+      twoBlockTest('T = List[Dog], block - child', function() {
+        const tIn = this.getOuterInput('t');
+        const listDogOut = this.getInnerOutput('list[dog]');
+        tIn.connect(listDogOut);
+        this.assertHasType(tIn, 'list[dog]');
+      });
+
+      twoBlockTest('T = List[Dog], block - parent', function() {
+        const listDogIn = this.getOuterInput('list[dog]');
+        const tOut = this.getInnerOutput('t');
+        listDogIn.connect(tOut);
+        this.assertHasType(tOut, 'list[dog]');
+      });
+
+      twoBlockTest('T = List[Dog], bound', function() {
+        const tIn = this.getInnerOutput('t');
+        this.bindConnection(tIn, 'list[dog]');
+        this.assertHasType(tIn, 'list[dog]');
+      });
+
+      twoBlockTest('T = List[T], block - child', function() {
+        const tIn = this.getOuterInput('t');
+        const listTOut = this.getInnerOutput('list[t]');
+        tIn.connect(listTOut);
+        this.assertHasType(tIn, 'list[*]');
+      });
+
+      twoBlockTest('T = List[T], block - parent', function() {
+        const listTIn = this.getOuterInput('list[t]');
+        const tOut = this.getInnerOutput('t');
+        listTIn.connect(tOut);
+        this.assertHasType(tOut, 'list[*]');
+      });
+
+      // TODO: Evaluate generics in bound types.
+      //   Also add more tests.
+      twoBlockTest.skip('T = List[T]', function() {
+        const tOut = this.getInnerOutput('t');
+        this.bindConnection(tOut, 'list[t]');
+        this.assertHasType(tOut, 'list[*]');
+      });
+
+      twoBlockTest('List[T] Unbound', function() {
+        const tIn = this.getInnerOutput('list[t]');
+        this.assertHasType(tIn, 'list[*]');
+      });
+
+      twoBlockTest('List[T] = T, block - child', function() {
+        const listTIn = this.getOuterInput('list[t]');
+        const tOut = this.getInnerOutput('t');
+        listTIn.connect(tOut);
+        this.assertHasType(listTIn, 'list[*]');
+      }); // Cannot replicate w/ bind.
+
+      twoBlockTest('List[T] = T, block - parent', function() {
+        const tIn = this.getOuterInput('t');
+        const listTOut = this.getInnerOutput('list[t]');
+        tIn.connect(listTOut);
+        this.assertHasType(listTOut, 'list[*]');
+      }); // Cannot replicate w/ bind.
+
+      twoBlockTest('List[T] = List[G], block - child', function() {
+        const listTIn = this.getOuterInput('list[t]');
+        const listGOut = this.getInnerOutput('list[g]');
+        listTIn.connect(listGOut);
+        this.assertHasType(listTIn, 'list[*]');
+      });
+
+      twoBlockTest('List[T] = List[G], block - parent', function() {
+        const listGIn = this.getOuterInput('list[g]');
+        const listTOut = this.getInnerOutput('list[t]');
+        listGIn.connect(listTOut);
+        this.assertHasType(listGIn, 'list[*]');
+      });
+
+      twoBlockTest.skip('List[T] = List[G], bind', function() {
+        const listTIn = this.getOuterInput('list[t]');
+        this.bindConnection(listTIn, 'g');
+        this.assertHasType(listTIn, 'list[*]');
+      });
+
+      twoBlockTest('List[T], T = Dog, bind', function() {
+        const tOut = this.getInnerOutput('list[t]');
+        this.bindConnection(tOut, 'dog');
+        this.assertHasType(tOut, 'list[dog]');
+      });
+
+      twoBlockTest('List[T], T = List[Dog], bind', function() {
+        const tOut = this.getInnerOutput('list[t]');
+        this.bindConnection(tOut, 'list[dog]');
+        this.assertHasType(tOut, 'list[list[dog]]');
+      });
+
+      twoBlockTest('Dict[K, V], Unbound', function() {
+        const tOut = this.getInnerOutput('dict[k, v]');
+        this.assertHasType(tOut, 'dict[*, *]');
+      });
+
+      twoBlockTest('Dict[K, V], K = Dog, bind', function() {
+        const tOut = this.getInnerOutput('dict[k, v]');
+        this.bindType(tOut.block, 'dog', 'k');
+        this.assertHasType(tOut, 'dict[dog, *]');
+      });
+
+      twoBlockTest('Dict[K, V], V = Dog, bind', function() {
+        const tOut = this.getInnerOutput('dict[k, v]');
+        this.bindType(tOut.block, 'dog', 'v');
+        this.assertHasType(tOut, 'dict[*, dog]');
+      });
+
+      twoBlockTest('Dict[K, V], K = Dog, V = Dog, bind', function() {
+        const tOut = this.getInnerOutput('dict[k, v]');
+        this.bindType(tOut.block, 'dog', 'k');
+        this.bindType(tOut.block, 'dog', 'v');
+        this.assertHasType(tOut, 'dict[dog, dog]');
       });
 
       runTwoBlockTests();

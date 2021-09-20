@@ -15,7 +15,7 @@ import {
   parseType,
   duplicateStructure,
 } from './type_structure';
-import {isGeneric} from './utils';
+import {isGeneric, combine, isExplicit} from './utils';
 
 
 /**
@@ -277,15 +277,28 @@ export class TypeHierarchy {
 
   /**
    * Returns true if the types are exactly the same type. False otherwise.
-   * @param {!TypeStructure} type1 The structure of the first type.
-   * @param {!TypeStructure} type2 The structure of the second type.
+   * Note that generic parameters are considered "the same" as all other
+   * parameters.
+   * @param {!TypeStructure} type1 The name of the first type.
+   * @param {!TypeStructure} type2 The name of the second type.
    * @return {boolean} True if the types are exactly the same type. False
    *     otherwise.
    */
   typeIsExactlyType(type1, type2) {
     this.validateTypeStructure_(type1);
     this.validateTypeStructure_(type2);
-    return type1.equals(type2);
+
+    const isExactlyTypeRec = (typeA, typeB) => {
+      if (isGeneric(typeA.name) || isGeneric(typeB.name)) {
+        return true;
+      }
+      return typeA.name == typeB.name &&
+          typeA.params.length == typeB.params.length &&
+          typeA.params.every((param, i) => {
+            return isExactlyTypeRec(param, typeB.params[i]);
+          });
+    };
+    return isExactlyTypeRec(type1, type2);
   }
 
   /**
@@ -301,6 +314,10 @@ export class TypeHierarchy {
   typeFulfillsType(subType, superType) {
     this.validateTypeStructure_(subType);
     this.validateTypeStructure_(superType);
+
+    if (isGeneric(subType.name) || isGeneric(superType.name)) {
+      return true;
+    }
 
     const subDef = this.types_.get(subType.name);
     const superDef = this.types_.get(superType.name);
@@ -343,9 +360,15 @@ export class TypeHierarchy {
     }
     types.forEach((type) => this.validateTypeStructure_(type));
 
+    types = types.filter((type) => isExplicit(type.name));
+    if (!types.length) { // All types were generic.
+      return [new TypeStructure('*')];
+    }
+
     // Get the nearest common types for the "outer" types.
     const commonTypes = this.getNearestCommon_(
         types.map((type) => type.name), this.nearestCommonAncestors_);
+
 
     // Cannot use .map() because we append to the commonTypes array.
     const mappedTypes = [];
@@ -367,7 +390,7 @@ export class TypeHierarchy {
           this.getNearestCommonParents.bind(this),
           this.getNearestCommonDescendants.bind(this));
       paramsLists[0] = paramsLists[0].map((val) => [val]);
-      const combinations = this.combine_(paramsLists);
+      const combinations = combine(paramsLists);
       if (!combinations.length) {
         // If this commonType didn't unify, maybe the parents of that type will.
         commonTypes.push(...commonDef.supers());
@@ -437,7 +460,7 @@ export class TypeHierarchy {
               this.getNearestCommonDescendants.bind(this),
               this.getNearestCommonParents.bind(this));
           paramsLists[0] = paramsLists[0].map((val) => [val]);
-          const combinations = this.combine_(paramsLists);
+          const combinations = combine(paramsLists);
           return combinations.map((combo) => {
             const struct = new TypeStructure(commonType);
             struct.params = combo;
@@ -449,6 +472,141 @@ export class TypeHierarchy {
   }
 
   /**
+   * Returns an array of the types in the target structure that match instances
+   * of the given generic type in the source structure. These matching types
+   * may be generic or explicit.
+   * This function assumes that the *explicit types* in the source and target
+   * are compatible, but it does *not* assume that the given generic is only
+   * associated with a single other type, which is necessary for the *entire
+   * types* to be compatible.
+   * @param {!TypeStructure} generic The generic type structure to match
+   *     against.
+   * @param {!TypeStructure} source The type structure to find instances of the
+   *     generic within. Source must be a supertype of target.
+   * @param {!TypeStructure} target The type structure to find matches for the
+   *     generic within. Target must be a subtype of source.
+   * @return {!Array<!TypeStructure>} An array of types in the target structure
+   *     that match instances of the given generic type in the source structure.
+   *     If no matches can be found, an empty array is returned.
+   */
+  getMatchingTypesInDescendant(generic, source, target) {
+    return this.getMatchingTypes_(
+        generic,
+        source,
+        target,
+        (subDef, name, params) =>
+          subDef.getParamsForAncestor(name, params),
+        this.getMatchingTypesInDescendant.bind(this),
+        this.getMatchingTypesInAncestor.bind(this));
+  }
+
+  /**
+   * Returns an array of the types in the target structure that match instances
+   * of the given generic type in the source structure. These matching types
+   * may be generic or explicit.
+   * This function assumes that the *explicit types* in the source and target
+   * are compatible, but it does *not* assume that the given generic is only
+   * associated with a single other type, which is necessary for the *entire
+   * types* to be compatible.
+   * @param {!TypeStructure} generic The generic type structure to match
+   *     against.
+   * @param {!TypeStructure} source The type structure to find instances of the
+   *     generic within. Source must be a subtype of target.
+   * @param {!TypeStructure} target The type structure to find matches for the
+   *     generic within. Target must be a supertype of source.
+   * @return {!Array<!TypeStructure>} An array of types in the target structure
+   *     that match instances of the given generic type in the source structure.
+   *     If no matches can be found, an empty array is returned.
+   */
+  getMatchingTypesInAncestor(generic, source, target) {
+    return this.getMatchingTypes_(
+        generic,
+        source,
+        target,
+        this.getParamsForDescendant_.bind(this),
+        this.getMatchingTypesInAncestor.bind(this),
+        this.getMatchingTypesInDescendant.bind(this));
+  }
+
+  /**
+   * Returns an array of the types in the target structure that match instances
+   * of the given generic type in the source structure. These matching types
+   * may be generic or explicit.
+   * This function assumes that the *explicit types* in the source and target
+   * are compatible, but it does *not* assume that the given generic is only
+   * associated with a single other type, which is necessary for the *entire
+   * types* to be compatible.
+   * @param {!TypeStructure} generic The generic type structure to match
+   *     against.
+   * @param {!TypeStructure} source The type structure to find instances of the
+   *     generic within. Source must be a subtype of target.
+   * @param {!TypeStructure} target The type structure to find matches for the
+   *     generic within. Target must be a supertype of source.
+   * @param {function(!TypeDef, string, !Array<!TypeStructure>):
+   *     Array<TypeStructure>} reorderParamsFn Returns an array of the given
+   *     set of actual params for the given type def in the order to be
+   *     compatible with the other related type (whose name is passed
+   *     as a string).
+   * @param {function(!TypeStructure, !TypeStructure, !TypeStructure):
+   *     !Array<!TypeStructure>} covariantRecursion The function to call in the
+   *     case of a covariant/invariant parameter.
+   * @param {function(!TypeStructure, !TypeStructure, !TypeStructure):
+   *     !Array<!TypeStructure>} contravariantRecursion The function to call in
+   *     the case of a contravariant parameter.
+   * @return {!Array<!TypeStructure>} An array of types in the target structure
+   *     that match instances of the given generic type in the source structure.
+   *     If no matches can be found, an empty array is returned.
+   */
+  getMatchingTypes_(
+      generic,
+      source,
+      target,
+      reorderParamsFn,
+      covariantRecursion,
+      contravariantRecursion
+  ) {
+    if (source.equals(generic)) {
+      // Null represents a type that we don't have info for.
+      return !target ? [] : [target];
+    }
+    if (!target || isGeneric(target.name) || !source.params.length) {
+      return [];
+    }
+
+    this.validateTypeStructure_(source);
+    this.validateTypeStructure_(target);
+
+    const sourceDef = this.types_.get(source.name);
+    const targetDef = this.types_.get(target.name);
+
+    const orderedParams = reorderParamsFn(
+        targetDef, source.name, target.params);
+    return source.params
+        .reduce((accumulator, param, i) => {
+          const subParam = orderedParams[i];
+          const paramDef = sourceDef.getParamForIndex(i);
+          switch (paramDef.variance) {
+            // For invariant the params are identical, so it doesn't matter
+            // which function we call.
+            case Variance.INV:
+            case Variance.CO:
+              return [
+                ...accumulator,
+                ...covariantRecursion(generic, param, subParam)];
+            case Variance.CONTRA:
+              return [
+                ...accumulator,
+                ...contravariantRecursion(generic, param, subParam)];
+          }
+        }, [])
+        // Remove duplicates.
+        .filter((typeStruct1, i, arrays) => {
+          return arrays.findIndex(
+              (typeStruct2) => typeStruct2.equals(typeStruct1)) == i;
+        });
+  }
+
+  /**
    * Validates that the given type structure conforms to a definition known
    * to the type hierarchy. Note that this *only* validates the "top level"
    * type. It does *not* recursively validate parameters.
@@ -456,6 +614,12 @@ export class TypeHierarchy {
    * @private
    */
   validateTypeStructure_(struct) {
+    if (isGeneric(struct.name)) {
+      if (struct.params.length) {
+        throw new GenericWithParamsError();
+      }
+      return;
+    }
     const def = this.types_.get(struct.name);
     if (!def) {
       throw new TypeNotFoundError(struct.name);
@@ -497,12 +661,12 @@ export class TypeHierarchy {
    * parameters of the actualTypes that are associated with the given parameter
    * at that index for the common type.
    * @param {!Array<!TypeStructure>} actualTypes The actual types we are mapping
-   *     the paramters of to the common type.
+   *     the parameters of to the common type.
    * @param {string} commonType The name of the common type we are getting the
    *     params in the order of.
    * @param {function(!TypeDef, string, !Array<!TypeStructure>)
-   * :!Array<!TypeStructure>}
-   *     getParamsForCommon A function that takes in the definition of a type
+   * :!Array<!TypeStructure>} getParamsForCommon
+   *     A function that takes in the definition of a type
    *     and maps the given actual params to the parameters of the common type.
    * @return {!Array<!Array<TypeStructure>>} An array of arrays where each sub
    *     array is a list of actual type parameters of the actualTypes that are
@@ -538,12 +702,12 @@ export class TypeHierarchy {
    *     params to unify for a given param of the common def.
    * @param {!TypeDef} commonDef The common type definition that determines
    *     the variance of the different parameters.
-   * @param {function(...!TypeStructure):!Array<!TypeStructure>}
-   *     covariantRecursion The function to call in the case of a
-   *     covariant parameter.
-   * @param {function(...!TypeStructure):!Array<!TypeStructure>}
-   *     contravariantRecursion The function to call in the case of a
-   *     contravariant parameter.
+   * @param {function(...!TypeStructure):
+   *     !Array<!TypeStructure>} covariantRecursion The function to call in the
+   *     case of a covariant parameter.
+   * @param {function(...!TypeStructure):
+   *     !Array<!TypeStructure>} contravariantRecursion The function to call in
+   *     the case of a contravariant parameter.
    * @return {!Array<!Array<!TypeStructure>>} An array of arrays of common types
    *     for each of the lists of actual types for a given parameter of the
    *     commonDef. An empty subarray means a common type could not be found.
@@ -569,29 +733,6 @@ export class TypeHierarchy {
           return []; // Empty array means the types do not unify.
       }
     });
-  }
-
-  /**
-   * Creates all combinations of elements in the subarrays as arrays. If any
-   * subarray is an empty array, this evaluates to an empty array.
-   * @param {!Array<!Array<*>>} firstArray The first array to add the items
-   *     of the second array onto. Should be an array of arrays for proper
-   *     combinating.
-   * @param {!Array<*>} secondArray An array of elements used to create
-   *     combinations.
-   * @param {!Array<!Array<*>>} rest The rest of the arrays of elements.
-   * @return {!Array<!Array<*>>} All combinations of elements in all of the
-   *     subarrays.
-   * @private
-   */
-  combine_([firstArray, ...[secondArray, ...rest]]) {
-    if (!secondArray) {
-      return firstArray;
-    }
-    const combined = firstArray
-        .map((a) => secondArray.map((b) => [].concat(a, b)))
-        .reduce((flat, toFlatten) => [...flat, ...toFlatten], []);
-    return this.combine_([combined, ...rest]);
   }
 
   /**
@@ -1113,6 +1254,21 @@ export class TypeNotFoundError extends Error {
      * The type name that was not found.
      */
     this.type = type;
+
+    this.name = this.constructor.name;
+  }
+}
+
+/**
+ * Represents an error where a generic type with parameters is found, which is
+ * not allowed.
+ */
+export class GenericWithParamsError extends Error {
+  /**
+   * Constructs a GenericWithParamsError.
+   */
+  constructor() {
+    super('Found a generic type with parameters, which is not allowed.');
 
     this.name = this.constructor.name;
   }
