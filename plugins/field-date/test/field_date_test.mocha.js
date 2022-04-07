@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const {testHelpers} = require('@blockly/dev-tools');
+const Blockly = require('blockly');
 const FieldDate = require('../dist/date_compressed');
 
 const {
   assertFieldValue, FieldCreationTestCase, FieldValueTestCase,
   runConstructorSuiteTests, runFromJsonSuiteTests, runSetValueTests,
-} = testHelpers;
+} = Blockly.test.helpers.fields;
 
 suite('FieldDate', function() {
   /**
