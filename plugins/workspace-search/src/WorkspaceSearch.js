@@ -15,6 +15,14 @@ import {injectSearchCss} from './css.js';
 import * as Blockly from 'blockly/core';
 
 /**
+ * stuff
+ * @return {string} stuff
+ */
+export function foo() {
+  return 'stuff';
+}
+
+/**
  * Class for workspace search.
  * @implements {Blockly.IPositionable}
  */
