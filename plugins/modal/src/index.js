@@ -13,6 +13,14 @@
 import * as Blockly from 'blockly/core';
 
 /**
+ * stuff
+ * @return {string} stuff
+ */
+export function foo() {
+  return 'stuff';
+}
+
+/**
  * Class responsible for creating a Blockly modal.
  */
 export class Modal {
