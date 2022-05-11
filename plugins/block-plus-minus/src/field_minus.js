@@ -12,6 +12,14 @@
 import * as Blockly from 'blockly/core';
 
 /**
+ * stuff
+ * @return {string} stuff
+ */
+export function foo() {
+  return 'stuff';
+}
+
+/**
  * Creates a minus image field used for mutation.
  * @param {Object=} args Untyped args passed to block.minus when the field
  *     is clicked.
