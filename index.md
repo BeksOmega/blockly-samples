@@ -8,10 +8,8 @@ layout: index
 * [Blocks Plus Minus](plugins/block-plus-minus/test/index.html)
 * [Blocks Dynamic Connection](plugins/block-dynamic-connection/test/index.html)
 
-## Block Extensions
-* [Block Extension Tooltip](plugins/block-extension-tooltip/test/index.html)
-
 ## Fields
+* [Field Bitmap](plugins/field-bitmap/test/index.html)
 * [Field Date](plugins/field-date/test/index.html)
 * [Field Slider](plugins/field-slider/test/index.html)
 * [Field Grid Dropdown](plugins/field-grid-dropdown/test/index.html)
