@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 3.0.0 (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* update peer and devDependencies of all plugins to require Blockly v9 (#1314)
+* use multiline string instead of array for Blockly.Css (#1171)
+
+### Features
+
+* Make FieldGridDropdown primaryColour and borderColour configurable ([#930](https://github.com/google/blockly-samples/issues/930)) ([7873865](https://github.com/google/blockly-samples/commit/78738656d2af3ba79b92cf8b11f6d640e5774fa3))
+
+
+### Bug Fixes
+
+* package versions to support patch releases ([#1150](https://github.com/google/blockly-samples/issues/1150)) ([e1ae378](https://github.com/google/blockly-samples/commit/e1ae378d779531621c3d948566257d069002963f))
+* references to deprecated functions in v9 ([#1313](https://github.com/google/blockly-samples/issues/1313)) ([cb2e679](https://github.com/google/blockly-samples/commit/cb2e67987e0b62a77c26adc660cc6ade1ba67954))
+* update the eslint version in root and remove unnecessary suppress annotations ([#985](https://github.com/google/blockly-samples/issues/985)) ([cacc4f7](https://github.com/google/blockly-samples/commit/cacc4f73bf0d10d3cd712e7126ed808cde39db87))
+* use multiline string instead of array for Blockly.Css ([#1171](https://github.com/google/blockly-samples/issues/1171)) ([c95c361](https://github.com/google/blockly-samples/commit/c95c36153213b1e71f5a1a7f6574d01f94e6d59b))
+
+
+### Reverts
+
+* Revert "Publish" (#981) ([8534a34](https://github.com/google/blockly-samples/commit/8534a34f0f39eeea1633efe6dabc853bbc2fc756)), closes [#981](https://github.com/google/blockly-samples/issues/981)
+
+
+### Miscellaneous Chores
+
+* update peer and devDependencies of all plugins to require Blockly v9 ([#1314](https://github.com/google/blockly-samples/issues/1314)) ([03d4912](https://github.com/google/blockly-samples/commit/03d4912c42c8de0f30493037ccc28dddaea0f266))
+
+
+
 ## [2.0.0](https://github.com/google/blockly-samples/compare/@blockly/field-grid-dropdown@1.0.47...@blockly/field-grid-dropdown@2.0.0) (2022-10-05)
 
 

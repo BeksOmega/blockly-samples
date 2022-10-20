@@ -3,6 +3,34 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 3.0.0 (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* update peer and devDependencies of all plugins to require Blockly v9 (#1314)
+
+### Features
+
+* add cross-tab-copy-paste plugin type declaration ([#1143](https://github.com/google/blockly-samples/issues/1143)) ([a5d90a4](https://github.com/google/blockly-samples/commit/a5d90a4a4abc28455255a70c45b8e0143de84d73))
+* add error callback to cross-tab copy-paste ([#1291](https://github.com/google/blockly-samples/issues/1291)) ([a4d6841](https://github.com/google/blockly-samples/commit/a4d68412aa3553c802f28c5e909cf58ebdbfa54d)), closes [#1218](https://github.com/google/blockly-samples/issues/1218)
+
+
+### Bug Fixes
+
+* avoid copy from inside context menus ([#1304](https://github.com/google/blockly-samples/issues/1304)) ([3d4ef16](https://github.com/google/blockly-samples/commit/3d4ef169426474ffd42b39f913e0484d524d0773)), closes [#1169](https://github.com/google/blockly-samples/issues/1169)
+* Corrected typo in cross-tab copy paste plugin README ([#1080](https://github.com/google/blockly-samples/issues/1080)) ([e7e655a](https://github.com/google/blockly-samples/commit/e7e655a4797a6b0d32657e60d4d5a51d1ce51cf0))
+* references to deprecated functions in v9 ([#1313](https://github.com/google/blockly-samples/issues/1313)) ([cb2e679](https://github.com/google/blockly-samples/commit/cb2e67987e0b62a77c26adc660cc6ade1ba67954))
+* update cross-tab-copy-paste peer dependency to support minor and patch updates to blockly version 8 ([#1147](https://github.com/google/blockly-samples/issues/1147)) ([35edbc9](https://github.com/google/blockly-samples/commit/35edbc9d7b882ec9a24ff0811e1e255f5d565fe8))
+* Use scope.block in place of Blockly.selected ([#1115](https://github.com/google/blockly-samples/issues/1115)) ([709363f](https://github.com/google/blockly-samples/commit/709363fa734381fc4afe9d0adea34b40794705eb))
+
+
+### Miscellaneous Chores
+
+* update peer and devDependencies of all plugins to require Blockly v9 ([#1314](https://github.com/google/blockly-samples/issues/1314)) ([03d4912](https://github.com/google/blockly-samples/commit/03d4912c42c8de0f30493037ccc28dddaea0f266))
+
+
+
 ## [2.0.0](https://github.com/google/blockly-samples/compare/@blockly/plugin-cross-tab-copy-paste@1.0.14...@blockly/plugin-cross-tab-copy-paste@2.0.0) (2022-10-05)
 
 

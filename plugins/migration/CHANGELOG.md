@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.2.0 (2022-10-20)
+
+
+### Features
+
+* add a migration script to fix imports ([#1306](https://github.com/google/blockly-samples/issues/1306)) ([338c5b3](https://github.com/google/blockly-samples/commit/338c5b322e287768a72e4be6e2d2c5aabf037e5a))
+* **migration:** add a script for automatically performing renaming in developers' files ([#1039](https://github.com/google/blockly-samples/issues/1039)) ([e6b3a63](https://github.com/google/blockly-samples/commit/e6b3a633471eeaeab380b82337827ae697e0c4ce))
+
+
+### Bug Fixes
+
+* requiring the incorrect package file ([#1160](https://github.com/google/blockly-samples/issues/1160)) ([afae116](https://github.com/google/blockly-samples/commit/afae116773cdab6c9c1a7d01390054b7bd150e51))
+
+
+
 ## [1.1.0](https://github.com/google/blockly-samples/compare/@blockly/migrate@1.0.12...@blockly/migrate@1.1.0) (2022-10-05)
 
 

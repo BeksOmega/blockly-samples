@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.1.21 (2022-10-20)
+
+
+### Bug Fixes
+
+* generator imports for use with blockly v9 ([#1305](https://github.com/google/blockly-samples/issues/1305)) ([51d59e9](https://github.com/google/blockly-samples/commit/51d59e98d172400e45fc74755f577e068df9996b))
+* update major dependency versions and remove lerna forceLocal flag ([#1121](https://github.com/google/blockly-samples/issues/1121)) ([c736aeb](https://github.com/google/blockly-samples/commit/c736aeb938559ca78973ed8200c8697d4f9f8389))
+* update the eslint version in root and remove unnecessary suppress annotations ([#985](https://github.com/google/blockly-samples/issues/985)) ([cacc4f7](https://github.com/google/blockly-samples/commit/cacc4f73bf0d10d3cd712e7126ed808cde39db87))
+
+
+
 ## [1.1.20](https://github.com/google/blockly-samples/compare/@blockly/create-package@1.1.19...@blockly/create-package@1.1.20) (2022-10-05)
 
 

@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 4.0.0 (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* update peer and devDependencies of all plugins to require Blockly v9 (#1314)
+
+### Features
+
+* added visual indicator for backpack that contains blocks. ([#1142](https://github.com/google/blockly-samples/issues/1142)) ([c74031e](https://github.com/google/blockly-samples/commit/c74031e218fe0b01dc4d0d30cf07fd00f7e8504f))
+* Configurable backpack open ([#932](https://github.com/google/blockly-samples/issues/932)) ([98e154a](https://github.com/google/blockly-samples/commit/98e154a11894d2c7cc183e6f716c21d5e68f23f4))
+* make the filled backpack image optional ([#1146](https://github.com/google/blockly-samples/issues/1146)) ([549be3d](https://github.com/google/blockly-samples/commit/549be3d0ae7532d209d3a61f5c6562cc3126bd62))
+
+
+### Bug Fixes
+
+* Blockly.utils.genUid was deprecated ([#1002](https://github.com/google/blockly-samples/issues/1002)) ([37d0fc4](https://github.com/google/blockly-samples/commit/37d0fc4d832f6eab0969053f8ca05e2cdc399583)), closes [google/blockly#5441](https://github.com/google/blockly/issues/5441)
+* deprecated warning ([#1077](https://github.com/google/blockly-samples/issues/1077)) ([34b8b56](https://github.com/google/blockly-samples/commit/34b8b563b7a20d8a60fa7595c1d07ac88610124b))
+* package versions to support patch releases ([#1150](https://github.com/google/blockly-samples/issues/1150)) ([e1ae378](https://github.com/google/blockly-samples/commit/e1ae378d779531621c3d948566257d069002963f))
+* references to deprecated functions in v9 ([#1313](https://github.com/google/blockly-samples/issues/1313)) ([cb2e679](https://github.com/google/blockly-samples/commit/cb2e67987e0b62a77c26adc660cc6ade1ba67954))
+* update homepage url ([#1010](https://github.com/google/blockly-samples/issues/1010)) ([58586f6](https://github.com/google/blockly-samples/commit/58586f644f32cb93e9139eb44985164b5f43f93f)), closes [google/blockly#5441](https://github.com/google/blockly/issues/5441)
+* update the eslint version in root and remove unnecessary suppress annotations ([#985](https://github.com/google/blockly-samples/issues/985)) ([cacc4f7](https://github.com/google/blockly-samples/commit/cacc4f73bf0d10d3cd712e7126ed808cde39db87))
+
+
+### Reverts
+
+* Revert "Publish" (#981) ([8534a34](https://github.com/google/blockly-samples/commit/8534a34f0f39eeea1633efe6dabc853bbc2fc756)), closes [#981](https://github.com/google/blockly-samples/issues/981)
+
+
+### Miscellaneous Chores
+
+* update peer and devDependencies of all plugins to require Blockly v9 ([#1314](https://github.com/google/blockly-samples/issues/1314)) ([03d4912](https://github.com/google/blockly-samples/commit/03d4912c42c8de0f30493037ccc28dddaea0f266))
+
+
+
 ## [3.0.0](https://github.com/google/blockly-samples/compare/@blockly/workspace-backpack@2.0.16...@blockly/workspace-backpack@3.0.0) (2022-10-05)
 
 

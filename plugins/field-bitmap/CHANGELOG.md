@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 3.0.0 (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* update peer and devDependencies of all plugins to require Blockly v9 (#1314)
+
+### Features
+
+* add bitmap input field ([#1122](https://github.com/google/blockly-samples/issues/1122)) ([6f041b4](https://github.com/google/blockly-samples/commit/6f041b48eee7fd0332f54573c73fed052fe20a06))
+
+
+### Bug Fixes
+
+* **#1174:** bitmap field JsDoc and formatting ([#1176](https://github.com/google/blockly-samples/issues/1176)) ([c179a20](https://github.com/google/blockly-samples/commit/c179a2084f8e709990e0fa856256ac86fcbf9d2b)), closes [#1174](https://github.com/google/blockly-samples/issues/1174) [#1174](https://github.com/google/blockly-samples/issues/1174)
+* don't allow anything in the bitmap dropdown to be dragged ([#1205](https://github.com/google/blockly-samples/issues/1205)) ([74981d1](https://github.com/google/blockly-samples/commit/74981d1cb3bd54fd40320f5834b65153a0f851b4))
+* references to deprecated functions in v9 ([#1313](https://github.com/google/blockly-samples/issues/1313)) ([cb2e679](https://github.com/google/blockly-samples/commit/cb2e67987e0b62a77c26adc660cc6ade1ba67954))
+* update package and package-lock for bitmap release ([f1e7963](https://github.com/google/blockly-samples/commit/f1e796327e0958455c407cbaf06c42e148c9dae5))
+
+
+### Miscellaneous Chores
+
+* update peer and devDependencies of all plugins to require Blockly v9 ([#1314](https://github.com/google/blockly-samples/issues/1314)) ([03d4912](https://github.com/google/blockly-samples/commit/03d4912c42c8de0f30493037ccc28dddaea0f266))
+
+
+
 ## [2.0.0](https://github.com/google/blockly-samples/compare/@blockly/field-bitmap@1.0.7...@blockly/field-bitmap@2.0.0) (2022-10-05)
 
 

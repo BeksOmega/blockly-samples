@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 0.4.0 (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* update peer and devDependencies of all plugins to require Blockly v9 (#1314)
+
+### Bug Fixes
+
+* keyboard navigation tests ([#1311](https://github.com/google/blockly-samples/issues/1311)) ([8299646](https://github.com/google/blockly-samples/commit/8299646ecf26bf0a95df11bfb24ae2e219c88176))
+* package versions to support patch releases ([#1150](https://github.com/google/blockly-samples/issues/1150)) ([e1ae378](https://github.com/google/blockly-samples/commit/e1ae378d779531621c3d948566257d069002963f))
+* references to deprecated functions in v9 ([#1313](https://github.com/google/blockly-samples/issues/1313)) ([cb2e679](https://github.com/google/blockly-samples/commit/cb2e67987e0b62a77c26adc660cc6ade1ba67954))
+* update keyboard nav to use new clipboard APIs ([#1088](https://github.com/google/blockly-samples/issues/1088)) ([cd49b87](https://github.com/google/blockly-samples/commit/cd49b87e39134e1ad36ac65b15bec354e884b2dd))
+* Update package import for keyboard navigation demo ([#1170](https://github.com/google/blockly-samples/issues/1170)) ([69c1725](https://github.com/google/blockly-samples/commit/69c1725b775279fcc397dc178935208d5f42b08c))
+* update the eslint version in root and remove unnecessary suppress annotations ([#985](https://github.com/google/blockly-samples/issues/985)) ([cacc4f7](https://github.com/google/blockly-samples/commit/cacc4f73bf0d10d3cd712e7126ed808cde39db87))
+* Update usage of Blockly.utils.screenToWsCoordinates ([2cf75d1](https://github.com/google/blockly-samples/commit/2cf75d17a70178e0874484dc8407db6e19ecb097))
+* update versions of typed-variable-modal and keyboard-nav ([d62718a](https://github.com/google/blockly-samples/commit/d62718a5c91aaf98beb5a3d5e08cd08c1aa31174))
+* updates keyboard nav to work with the 2021 dec release ([#942](https://github.com/google/blockly-samples/issues/942)) ([2dd377a](https://github.com/google/blockly-samples/commit/2dd377a28565a4256a7109b4e0d45e24800241b9))
+
+
+### Reverts
+
+* Revert "Publish" (#981) ([8534a34](https://github.com/google/blockly-samples/commit/8534a34f0f39eeea1633efe6dabc853bbc2fc756)), closes [#981](https://github.com/google/blockly-samples/issues/981)
+
+
+### Miscellaneous Chores
+
+* update peer and devDependencies of all plugins to require Blockly v9 ([#1314](https://github.com/google/blockly-samples/issues/1314)) ([03d4912](https://github.com/google/blockly-samples/commit/03d4912c42c8de0f30493037ccc28dddaea0f266))
+
+
+
 ## [0.3.0](https://github.com/google/blockly-samples/compare/@blockly/keyboard-navigation@0.2.22...@blockly/keyboard-navigation@0.3.0) (2022-10-05)
 
 

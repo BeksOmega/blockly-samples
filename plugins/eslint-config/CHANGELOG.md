@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 3.0.0 (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* bump the blockly peer dependency in dev-tools and remove version probing (#1191)
+
+### Bug Fixes
+
+* bump the blockly peer dependency in dev-tools and remove version probing ([#1183](https://github.com/google/blockly-samples/issues/1183)) ([79ce104](https://github.com/google/blockly-samples/commit/79ce10444cb59880c620dc7db3768f8655f341d8))
+* bump the blockly peer dependency in dev-tools and remove version probing ([#1191](https://github.com/google/blockly-samples/issues/1191)) ([af7b82e](https://github.com/google/blockly-samples/commit/af7b82ee1dd1cb2607f571da85d647db13d3da28))
+* update the eslint version in root and remove unnecessary suppress annotations ([#985](https://github.com/google/blockly-samples/issues/985)) ([cacc4f7](https://github.com/google/blockly-samples/commit/cacc4f73bf0d10d3cd712e7126ed808cde39db87))
+* update version of webpack-cli to be compatible ([#976](https://github.com/google/blockly-samples/issues/976)) ([3bf916b](https://github.com/google/blockly-samples/commit/3bf916b65286d01f204d85924e7abdf72551e7a4))
+
+
+### Reverts
+
+* Revert "fix: bump the blockly peer dependency in dev-tools and remove version probing (#1183)" (#1190) ([7e1451b](https://github.com/google/blockly-samples/commit/7e1451b2bf86d0a17b3e323938b5271d018eb18c)), closes [#1183](https://github.com/google/blockly-samples/issues/1183) [#1190](https://github.com/google/blockly-samples/issues/1190)
+* Revert "Publish" (#981) ([8534a34](https://github.com/google/blockly-samples/commit/8534a34f0f39eeea1633efe6dabc853bbc2fc756)), closes [#981](https://github.com/google/blockly-samples/issues/981)
+
+
+
 ## 2.1.18 (2022-08-11)
 
 

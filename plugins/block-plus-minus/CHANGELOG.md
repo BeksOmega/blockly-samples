@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 5.0.0 (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* update peer and devDependencies of all plugins to require Blockly v9 (#1314)
+
+### Features
+
+* add JSO hooks to plus-minus blocks ([#847](https://github.com/google/blockly-samples/issues/847)) ([6544a30](https://github.com/google/blockly-samples/commit/6544a3044821c078543d97efe2e55ca5b43b6645))
+* convert block-plus-minus :toolbox definition from xml to json ([#1285](https://github.com/google/blockly-samples/issues/1285)) ([d8d1c67](https://github.com/google/blockly-samples/commit/d8d1c676b87ee695ea1f070937651fbabe5377c3))
+
+
+### Bug Fixes
+
+* check whether extension is registered before unregistering ([#891](https://github.com/google/blockly-samples/issues/891)) ([dd7582f](https://github.com/google/blockly-samples/commit/dd7582f940a69ebabbaacf79d7846fd87778e66c))
+* generator imports for use with blockly v9 ([#1305](https://github.com/google/blockly-samples/issues/1305)) ([51d59e9](https://github.com/google/blockly-samples/commit/51d59e98d172400e45fc74755f577e068df9996b))
+* package versions to support patch releases ([#1150](https://github.com/google/blockly-samples/issues/1150)) ([e1ae378](https://github.com/google/blockly-samples/commit/e1ae378d779531621c3d948566257d069002963f))
+* references to deprecated functions in v9 ([#1313](https://github.com/google/blockly-samples/issues/1313)) ([cb2e679](https://github.com/google/blockly-samples/commit/cb2e67987e0b62a77c26adc660cc6ade1ba67954))
+* undo and redo in plus-minus blocks ([#1181](https://github.com/google/blockly-samples/issues/1181)) ([fc34044](https://github.com/google/blockly-samples/commit/fc340443515c12d8b6e76453a84e15365725bc07))
+* update block plus minus plugin to work with december 2021 release ([#943](https://github.com/google/blockly-samples/issues/943)) ([0da9c67](https://github.com/google/blockly-samples/commit/0da9c6792acbabf6208d5e3e62c93c2299eb4cf8))
+* update the eslint version in root and remove unnecessary suppress annotations ([#985](https://github.com/google/blockly-samples/issues/985)) ([cacc4f7](https://github.com/google/blockly-samples/commit/cacc4f73bf0d10d3cd712e7126ed808cde39db87))
+
+
+### Reverts
+
+* Revert "Publish" (#981) ([8534a34](https://github.com/google/blockly-samples/commit/8534a34f0f39eeea1633efe6dabc853bbc2fc756)), closes [#981](https://github.com/google/blockly-samples/issues/981)
+
+
+### Miscellaneous Chores
+
+* update peer and devDependencies of all plugins to require Blockly v9 ([#1314](https://github.com/google/blockly-samples/issues/1314)) ([03d4912](https://github.com/google/blockly-samples/commit/03d4912c42c8de0f30493037ccc28dddaea0f266))
+
+
+
 ## [4.0.0](https://github.com/google/blockly-samples/compare/@blockly/block-plus-minus@3.0.22...@blockly/block-plus-minus@4.0.0) (2022-10-05)
 
 

@@ -3,6 +3,33 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 0.3.0 (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* update peer and devDependencies of all plugins to require Blockly v9 (#1314)
+
+### Bug Fixes
+
+* override old blocks in dynamic connections ([#988](https://github.com/google/blockly-samples/issues/988)) ([638bfcd](https://github.com/google/blockly-samples/commit/638bfcd3fcb3f4563cdbd37e23db68447d982998))
+* package versions to support patch releases ([#1150](https://github.com/google/blockly-samples/issues/1150)) ([e1ae378](https://github.com/google/blockly-samples/commit/e1ae378d779531621c3d948566257d069002963f))
+* references to deprecated functions in v9 ([#1313](https://github.com/google/blockly-samples/issues/1313)) ([cb2e679](https://github.com/google/blockly-samples/commit/cb2e67987e0b62a77c26adc660cc6ade1ba67954))
+* Update block-dynamic-connection to use JSON toolbox ([#1238](https://github.com/google/blockly-samples/issues/1238)) ([#1286](https://github.com/google/blockly-samples/issues/1286)) ([428c81c](https://github.com/google/blockly-samples/commit/428c81cef4bb58ce99128cbb78f1930ad238b6e5))
+* update the eslint version in root and remove unnecessary suppress annotations ([#985](https://github.com/google/blockly-samples/issues/985)) ([cacc4f7](https://github.com/google/blockly-samples/commit/cacc4f73bf0d10d3cd712e7126ed808cde39db87))
+
+
+### Reverts
+
+* Revert "Publish" (#981) ([8534a34](https://github.com/google/blockly-samples/commit/8534a34f0f39eeea1633efe6dabc853bbc2fc756)), closes [#981](https://github.com/google/blockly-samples/issues/981)
+
+
+### Miscellaneous Chores
+
+* update peer and devDependencies of all plugins to require Blockly v9 ([#1314](https://github.com/google/blockly-samples/issues/1314)) ([03d4912](https://github.com/google/blockly-samples/commit/03d4912c42c8de0f30493037ccc28dddaea0f266))
+
+
+
 ## [0.2.0](https://github.com/google/blockly-samples/compare/@blockly/block-dynamic-connection@0.1.36...@blockly/block-dynamic-connection@0.2.0) (2022-10-05)
 
 

@@ -3,6 +3,34 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 4.0.0 (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* update peer and devDependencies of all plugins to require Blockly v9 (#1314)
+
+### Bug Fixes
+
+* Added css documentation for workspace search plugin. ([#1282](https://github.com/google/blockly-samples/issues/1282)) ([5dd7d2d](https://github.com/google/blockly-samples/commit/5dd7d2d2bed3d1e4920e27b795a06fff08e85297))
+* package versions to support patch releases ([#1150](https://github.com/google/blockly-samples/issues/1150)) ([e1ae378](https://github.com/google/blockly-samples/commit/e1ae378d779531621c3d948566257d069002963f))
+* references to deprecated functions in v9 ([#1313](https://github.com/google/blockly-samples/issues/1313)) ([cb2e679](https://github.com/google/blockly-samples/commit/cb2e67987e0b62a77c26adc660cc6ade1ba67954))
+* scroll-options when drag surface is disabled ([#1202](https://github.com/google/blockly-samples/issues/1202)) ([eac0bad](https://github.com/google/blockly-samples/commit/eac0badff6311801f3e279f04e80832e93b74132))
+* update the eslint version in root and remove unnecessary suppress annotations ([#985](https://github.com/google/blockly-samples/issues/985)) ([cacc4f7](https://github.com/google/blockly-samples/commit/cacc4f73bf0d10d3cd712e7126ed808cde39db87))
+* Update usage of Blockly.utils.screenToWsCoordinates ([2cf75d1](https://github.com/google/blockly-samples/commit/2cf75d17a70178e0874484dc8407db6e19ecb097))
+
+
+### Reverts
+
+* Revert "Publish" (#981) ([8534a34](https://github.com/google/blockly-samples/commit/8534a34f0f39eeea1633efe6dabc853bbc2fc756)), closes [#981](https://github.com/google/blockly-samples/issues/981)
+
+
+### Miscellaneous Chores
+
+* update peer and devDependencies of all plugins to require Blockly v9 ([#1314](https://github.com/google/blockly-samples/issues/1314)) ([03d4912](https://github.com/google/blockly-samples/commit/03d4912c42c8de0f30493037ccc28dddaea0f266))
+
+
+
 ## [3.0.0](https://github.com/google/blockly-samples/compare/@blockly/plugin-scroll-options@2.0.23...@blockly/plugin-scroll-options@3.0.0) (2022-10-05)
 
 

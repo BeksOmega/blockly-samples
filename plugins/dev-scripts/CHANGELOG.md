@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2.0.0 (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* Return a non-zero error code on errors in build, lint (#982)
+
+### Bug Fixes
+
+* Add skip-lint option to start script ([#1116](https://github.com/google/blockly-samples/issues/1116)) ([862f280](https://github.com/google/blockly-samples/commit/862f280c3668ceec0ff4d59719f372e09316214d)), closes [#1031](https://github.com/google/blockly-samples/issues/1031)
+* Remove host option to work on Windows. ([#1064](https://github.com/google/blockly-samples/issues/1064)) ([e30148d](https://github.com/google/blockly-samples/commit/e30148dfc55800efa612f938b714c949d9032cc7))
+* Return a non-zero error code on errors in build, lint ([#982](https://github.com/google/blockly-samples/issues/982)) ([70d85f1](https://github.com/google/blockly-samples/commit/70d85f1e9523c164ae14ccf2e3e8e18b9349ed17))
+* scripts plugin now properly builds TypeScript declarations ([#1322](https://github.com/google/blockly-samples/issues/1322)) ([180cb6a](https://github.com/google/blockly-samples/commit/180cb6a431a2e9bdc1000b1521413d74625391db))
+* the test configuration so tests are again run ([#974](https://github.com/google/blockly-samples/issues/974)) ([eaeb016](https://github.com/google/blockly-samples/commit/eaeb0165ea5b0acca77ef915fa0c794564df3663))
+* update the eslint version in root and remove unnecessary suppress annotations ([#985](https://github.com/google/blockly-samples/issues/985)) ([cacc4f7](https://github.com/google/blockly-samples/commit/cacc4f73bf0d10d3cd712e7126ed808cde39db87))
+* update version of webpack-cli to be compatible ([#976](https://github.com/google/blockly-samples/issues/976)) ([3bf916b](https://github.com/google/blockly-samples/commit/3bf916b65286d01f204d85924e7abdf72551e7a4))
+* update webpack config so releases compile ([#1124](https://github.com/google/blockly-samples/issues/1124)) ([3dc381c](https://github.com/google/blockly-samples/commit/3dc381c587b12b41feb15fd141479bee7c6e7df6))
+* update webpack dev server version to fix loading ([#879](https://github.com/google/blockly-samples/issues/879)) ([47d85d1](https://github.com/google/blockly-samples/commit/47d85d1e5c53a716692d3091ff3ab39422b020e7))
+
+
+### Reverts
+
+* Revert "Publish" (#981) ([8534a34](https://github.com/google/blockly-samples/commit/8534a34f0f39eeea1633efe6dabc853bbc2fc756)), closes [#981](https://github.com/google/blockly-samples/issues/981)
+
+
+
 ## 1.2.27 (2022-08-11)
 
 
