@@ -1030,7 +1030,8 @@ const procedureCallerOnChangeMixin = {
       return;
     }
     if (event.type === Blockly.Events.BLOCK_CREATE &&
-      (event.blockId === this.id || event.ids.indexOf(this.id) !== -1)) {
+      (event.blockId === this.id || event.ids.indexOf(this.id) !== -1) &&
+      !this.getProcedureModel()) {
       // Look for the case where a procedure call was created (usually through
       // paste) and there is no matching definition.  In this case, create
       // an empty definition block with the correct signature.
