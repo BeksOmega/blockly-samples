@@ -9,28 +9,27 @@
  */
 
 import * as Blockly from 'blockly';
-import {createPlayground, toolboxCategories} from '@blockly/dev-tools';
+import {toolboxCategories} from '@blockly/dev-tools';
 import {blocks, unregisterProcedureBlocks} from '../src/index';
+import {ProcedureBase} from '../src/events_procedure_base';
 
 
 unregisterProcedureBlocks();
 Blockly.common.defineBlocks(blocks);
 
-/**
- * Create a workspace.
- * @param {HTMLElement} blocklyDiv The blockly container div.
- * @param {!Blockly.BlocklyOptions} options The Blockly options.
- * @return {!Blockly.WorkspaceSvg} The created workspace.
- */
-function createWorkspace(blocklyDiv, options) {
-  const workspace = Blockly.inject(blocklyDiv, options);
-  return workspace;
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-  const defaultOptions = {
+  const options = {
     toolbox: toolboxCategories,
   };
-  createPlayground(document.getElementById('root'), createWorkspace,
-      defaultOptions);
+  const workspace1 = Blockly.inject('blockly1', options);
+  const workspace2 = Blockly.inject('blockly2', options);
+  workspace1.addChangeListener(createChangeListener(workspace2));
+  workspace2.addChangeListener(createChangeListener(workspace1));
 });
+
+function createChangeListener(otherWorkspace) {
+  return (e) => {
+    if (!(e instanceof ProcedureBase)) return;
+    Blockly.Events.fromJson(e.toJson(), otherWorkspace).run(true);
+  };
+}

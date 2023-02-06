@@ -8,11 +8,23 @@
     html, body {
       margin: 0;
     }
+
+    #root {
+      display: flex;
+    }
+
+    .blockly {
+      flex-grow: 1;
+      height: 100vh;
+    }
   </style>
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="blockly" id="blockly1"></div>
+    <div class="blockly" id="blockly2"></div>
+  </div>
   <script src="../build/test_bundle.js"></script>
 </body>
 
