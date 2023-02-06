@@ -30,6 +30,17 @@ document.addEventListener('DOMContentLoaded', function() {
 function createChangeListener(otherWorkspace) {
   return (e) => {
     if (!(e instanceof ProcedureBase)) return;
-    Blockly.Events.fromJson(e.toJson(), otherWorkspace).run(true);
+    let event;
+    try {
+      event = Blockly.Events.fromJson(e.toJson(), otherWorkspace);
+    } catch (e) {
+      console.log(
+          'Could not deserialize event. This is expected to happen, e.g. ' +
+          'when round-tripping parameter deletes, the delete in the ' +
+          'secondary workspace cannot be deserialized into the original ' +
+          ' workspace.');
+      return;
+    }
+    event.run(true);
   };
 }

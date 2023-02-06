@@ -33,10 +33,11 @@ export class ProcedureParameterRename extends ProcedureParameterBase {
       workspace: Blockly.Workspace,
       procedure: Blockly.procedures.IProcedureModel,
       parameter: Blockly.procedures.IParameterModel,
-      readonly oldName: string) {
+      readonly oldName: string,
+      newName?: string) {
     super(workspace, procedure, parameter);
 
-    this.newName = parameter.getName();
+    this.newName = newName ?? parameter.getName();
   }
 
   /**
@@ -67,6 +68,7 @@ export class ProcedureParameterRename extends ProcedureParameterBase {
    */
   toJson(): ProcedureParameterRenameJson {
     const json = super.toJson() as ProcedureParameterRenameJson;
+    json['newName'] = this.newName;
     json['oldName'] = this.oldName;
     return json;
   }
@@ -96,7 +98,7 @@ export class ProcedureParameterRename extends ProcedureParameterBase {
           'target parameter does not exist');
     }
     return new ProcedureParameterRename(
-        workspace, model, param, json['oldName']);
+        workspace, model, param, json['oldName'], json['newName']);
   }
 }
 

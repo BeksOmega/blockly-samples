@@ -93,7 +93,12 @@ export class ProcedureParameterDelete extends ProcedureParameterBase {
           'Cannot deserialize procedure delete event because the ' +
           'target procedure does not exist');
     }
-    const param = model.getParameter(json['index']);
+    // TODO: Unify this with findMatchingParameter after rebase.
+    const paramId = json['parameterId'];
+    const param = model.getParameters().find((p) => p.getId() === paramId);
+    if (!param) {
+      throw new Error();
+    }
     return new ProcedureParameterDelete(workspace, model, param, json['index']);
   }
 }

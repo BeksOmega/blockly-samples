@@ -536,12 +536,50 @@ const procedureDefMutator = {
    * @this {Blockly.Block}
    */
   compose: function(containerBlock) {
+    // Only one of these four things should actually occur for any given
+    // composition, because the user can only drag blocks around to cause
+    // updates so quickly.
+    this.deleteParamsFromModel_(containerBlock);
+    this.renameParamsInModel_(containerBlock);
+    this.addParamsToModel_(containerBlock);
+
+    const hasStatements = containerBlock.getFieldValue('STATEMENTS');
+    if (hasStatements !== null) {
+      this.setStatements_(hasStatements === 'TRUE');
+    }
+  },
+
+  deleteParamsFromModel_: function(containerBlock) {
+    const ids = new Set(containerBlock.getDescendants().map((b) => b.id));
     const model = this.getProcedureModel();
     const count = model.getParameters().length;
-    model.startBulkUpdate();
     for (let i = count - 1; i >= 0; i--) {
-      model.deleteParameter(i);
+      if (!ids.has(model.getParameter(i).getId())) {
+        model.deleteParameter(i);
+      }
     }
+  },
+
+  renameParamsInModel_: function(containerBlock) {
+    const model = this.getProcedureModel();
+
+    let i = 0;
+    let paramBlock = containerBlock.getInputTargetBlock('STACK');
+    while (paramBlock && !paramBlock.isInsertionMarker()) {
+      const param = model.getParameter(i);
+      if (param && param.getId() === paramBlock.id &&
+          param.getName() !== paramBlock.getFieldValue('NAME')) {
+        console.log('renaming');
+        param.setName(paramBlock.getFieldValue('NAME'));
+      }
+      paramBlock =
+        paramBlock.nextConnection && paramBlock.nextConnection.targetBlock();
+      i++;
+    }
+  },
+
+  addParamsToModel_: function(containerBlock) {
+    const model = this.getProcedureModel();
 
     let i = 0;
     let paramBlock = containerBlock.getInputTargetBlock('STACK');
@@ -553,12 +591,6 @@ const procedureDefMutator = {
       paramBlock =
         paramBlock.nextConnection && paramBlock.nextConnection.targetBlock();
       i++;
-    }
-    model.endBulkUpdate();
-
-    const hasStatements = containerBlock.getFieldValue('STATEMENTS');
-    if (hasStatements !== null) {
-      this.setStatements_(hasStatements === 'TRUE');
     }
   },
 };
