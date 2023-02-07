@@ -29,7 +29,7 @@ export class ProcedureParameterCreate extends ProcedureParameterBase {
    */
   constructor(
       workspace: Blockly.Workspace,
-      procedure: Blockly.procedures.IProcedureModel,
+      procedure: Blockly.Procedures.IProcedureModel,
       parameter: ObservableParameterModel,
       readonly index: number) {
     super(workspace, procedure, parameter);
