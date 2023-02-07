@@ -1028,6 +1028,7 @@ suite('Procedures', function() {
           // Reorder the parameters.
           paramBlock2.previousConnection.disconnect();
           paramBlock1.previousConnection.disconnect();
+          defBlock.compose(containerBlock);
           containerBlock.getInput('STACK').connection
               .connect(paramBlock2.previousConnection);
           paramBlock2.nextConnection.connect(paramBlock1.previousConnection);
