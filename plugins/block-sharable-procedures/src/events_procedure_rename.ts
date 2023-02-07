@@ -26,10 +26,11 @@ export class ProcedureRename extends ProcedureBase {
   constructor(
       workspace: Blockly.Workspace,
       procedure: Blockly.procedures.IProcedureModel,
-      readonly oldName: string) {
+      readonly oldName: string,
+      newName?: string) {
     super(workspace, procedure);
 
-    this.newName = procedure.getName();
+    this.newName = newName ?? procedure.getName();
   }
 
   /**
@@ -58,6 +59,7 @@ export class ProcedureRename extends ProcedureBase {
    */
   toJson(): ProcedureRenameJson {
     const json = super.toJson() as ProcedureRenameJson;
+    json['newName'] = this.newName;
     json['oldName'] = this.oldName;
     return json;
   }
@@ -77,7 +79,8 @@ export class ProcedureRename extends ProcedureBase {
           'Cannot deserialize procedure rename event because the ' +
           'target procedure does not exist');
     }
-    return new ProcedureRename(workspace, model, json['oldName']);
+    return new ProcedureRename(
+        workspace, model, json['oldName'], json['newName']);
   }
 }
 
