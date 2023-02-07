@@ -12,6 +12,7 @@ import {ProcedureEnable} from './events_procedure_enable';
 import {ProcedureParameterCreate} from './events_procedure_parameter_create';
 import {ProcedureParameterDelete} from './events_procedure_parameter_delete';
 import {ProcedureRename} from './events_procedure_rename';
+import { ObservableParameterModel } from './observable_parameter_model';
 import {triggerProceduresUpdate} from './update_procedures';
 
 /** Represents a procedure signature. */
@@ -84,7 +85,10 @@ implements Blockly.procedures.IProcedureModel {
     if (this.shouldFireEvents) {
       Blockly.Events.fire(
           new ProcedureParameterCreate(
-              this.workspace, this, parameterModel, index));
+              this.workspace,
+              this,
+              parameterModel as ObservableParameterModel,
+              index));
     }
     return this;
   }

@@ -18,6 +18,8 @@ export class ProcedureParameterCreate extends ProcedureParameterBase {
   /** A string used to check the type of the event. */
   type = TYPE;
 
+  parameter: ObservableParameterModel;
+
   /**
    * Constructs the procedure parameter create event.js.
    * @param workspace The workspace this event is associated with.
@@ -28,7 +30,7 @@ export class ProcedureParameterCreate extends ProcedureParameterBase {
   constructor(
       workspace: Blockly.Workspace,
       procedure: Blockly.procedures.IProcedureModel,
-      parameter: Blockly.procedures.IParameterModel,
+      parameter: ObservableParameterModel,
       readonly index: number) {
     super(workspace, procedure, parameter);
   }
@@ -72,8 +74,9 @@ export class ProcedureParameterCreate extends ProcedureParameterBase {
    */
   toJson(): ProcedureParameterCreateJson {
     const json = super.toJson() as ProcedureParameterCreateJson;
-    json['parameter'] =
-        Blockly.serialization.procedures.saveParameter(this.parameter);
+    json['name'] = this.parameter.getName();
+    json['id'] = this.parameter.getId();
+    json['varId'] = this.parameter.getVariableModel().getId();
     json['index'] = this.index;
     return json;
   }
@@ -97,15 +100,17 @@ export class ProcedureParameterCreate extends ProcedureParameterBase {
     }
     return new ProcedureParameterCreate(
         workspace, procedure,
-        Blockly.serialization.procedures.loadParameter(
-            ObservableParameterModel, json['parameter'], workspace),
+        new ObservableParameterModel(
+            workspace, json['name'], json['id'], json['varId']),
         json['index']);
   }
 }
 
 export interface ProcedureParameterCreateJson extends
     ProcedureParameterBaseJson {
-  parameter: Blockly.serialization.procedures.ParameterState;
+  name: string;
+  id: string;
+  varId: string;
   index: number;
 }
 
