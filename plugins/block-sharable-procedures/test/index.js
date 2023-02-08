@@ -10,21 +10,26 @@
 
 import * as Blockly from 'blockly';
 import {toolboxCategories} from '@blockly/dev-tools';
-import {blocks, unregisterProcedureBlocks} from '../src/index';
+import {blocks, ObservableParameterModel, ObservableProcedureModel, unregisterProcedureBlocks} from '../src/index';
 import {ProcedureBase} from '../src/events_procedure_base';
 
 
 unregisterProcedureBlocks();
 Blockly.common.defineBlocks(blocks);
 
+export let workspace1;
+export let listener1;
+export let workspace2;
+export let listener2;
+
 document.addEventListener('DOMContentLoaded', function() {
   const options = {
     toolbox: toolboxCategories,
   };
-  const workspace1 = Blockly.inject('blockly1', options);
-  const workspace2 = Blockly.inject('blockly2', options);
-  workspace1.addChangeListener(createChangeListener(workspace2));
-  workspace2.addChangeListener(createChangeListener(workspace1));
+  workspace1 = Blockly.inject('blockly1', options);
+  workspace2 = Blockly.inject('blockly2', options);
+  listener1 = workspace1.addChangeListener(createChangeListener(workspace2));
+  listener2 = workspace2.addChangeListener(createChangeListener(workspace1));
 });
 
 function createChangeListener(otherWorkspace) {
@@ -47,4 +52,37 @@ function createChangeListener(otherWorkspace) {
     console.log('running', event);
     event.run(true);
   };
+}
+
+export function testSerialization() {
+  Blockly.serialization.registry.unregister('procedures');
+  Blockly.serialization.registry.register(
+      'procedures',
+      new Blockly.serialization.procedures.ProcedureSerializer(
+          ObservableProcedureModel, ObservableParameterModel));
+
+  workspace1.removeChangeListener(listener1);
+  workspace2.removeChangeListener(listener2);
+
+  const save1 = Blockly.serialization.workspaces.save(workspace1);
+  const save2 = Blockly.serialization.workspaces.save(workspace2);
+  console.log(JSON.stringify(save1, undefined, 2));
+  console.log(JSON.stringify(save2, undefined, 2));
+  Blockly.serialization.workspaces.load(save1, workspace1);
+  Blockly.serialization.workspaces.load(save2, workspace2);
+
+  const loadListener1 = workspace1.addChangeListener((e) => {
+    if (e instanceof Blockly.Events.FinishedLoading) {
+      workspace1.removeChangeListener(loadListener1);
+      listener1 = workspace1.addChangeListener(
+          createChangeListener(workspace2));
+    }
+  });
+  const loadListener2 = workspace1.addChangeListener((e) => {
+    if (e instanceof Blockly.Events.FinishedLoading) {
+      workspace2.removeChangeListener(loadListener2);
+      listener2 = workspace2.addChangeListener(
+          createChangeListener(workspace1));
+    }
+  });
 }
