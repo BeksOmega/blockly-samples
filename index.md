@@ -1,18 +1,20 @@
----
-layout: index
----
-
 # Plugins
 
 ## Blocks
 * [Blocks Plus Minus](plugins/block-plus-minus/test/index.html)
 * [Blocks Dynamic Connection](plugins/block-dynamic-connection/test/index.html)
+* [Blocks Shareable Procedures](plugins/block-shareable-procedures/test/index.html)
 
 ## Fields
 * [Field Bitmap](plugins/field-bitmap/test/index.html)
+* [Field HSV Colour](plugins/field-colour-hsv-sliders/test/index.html)
 * [Field Date](plugins/field-date/test/index.html)
 * [Field Slider](plugins/field-slider/test/index.html)
+* [Field Dependent Dropdown](plugins/field-dependent-dropdown/test/index.html)
 * [Field Grid Dropdown](plugins/field-grid-dropdown/test/index.html)
+* [Field Colour](/plugins/field-colour/test/index.html)
+* [Field Angle](/plugins/field-angle/test/index.html)
+* [Field Multiline Text](/plugins/field-multilineinput/test/index.html)
 
 
 ## Plugins
@@ -28,8 +30,10 @@ layout: index
 * [Zoom to Fit](plugins/zoom-to-fit/test/index.html)
 * [Keyboard Navigation](plugins/keyboard-navigation/test/index.html)
 * [Scroll Options](plugins/scroll-options/test/index.html)
-* [Serialize Disabled Interactions](plugins/serialize-disabled-interactions/test/index.html)
+* [Shadow Block Converter](plugins/shadow-block-converter/test/index.html)
+* [Suggested Blocks](plugins/suggested-blocks/test/index.html)
 * [Cross Tab Copy Paste](plugins/cross-tab-copy-paste/test/index.html)
+* [Inline Row Separators](plugins/renderer-inline-row-separators/test/index.html)
 
 ## Themes
 * [Theme Dark](plugins/theme-dark/test/index.html)
@@ -37,6 +41,11 @@ layout: index
 * [Theme High Contrast](plugins/theme-highcontrast/test/index.html)
 * [Theme Tritanopia](plugins/theme-tritanopia/test/index.html)
 * [Theme Deuteranopia](plugins/theme-deuteranopia/test/index.html)
+
+# Third Party Plugins
+These plugins are not published by the Blockly team. They are linked here for your convenience.
+* [Lexical Variables](https://www.npmjs.com/package/@mit-app-inventor/blockly-block-lexical-variables)
+* [Workspace Multi-Select](https://www.npmjs.com/package/@mit-app-inventor/blockly-plugin-workspace-multiselect)
 
 # Examples
 
@@ -66,6 +75,7 @@ layout: index
 ## JS Interpreter
 * [Step by step execution in JavaScript](examples/interpreter-demo/step-execution.html)
 * [Asynchronous execution in JavaScript](examples/interpreter-demo/async-execution.html)
+* [Backwards execution in JavaScript](examples/interpreter-demo/backwards.html)
 
 ## Custom Dialogs
 * [Custom Dialogs](examples/custom-dialogs-demo/index.html)
@@ -85,6 +95,3 @@ layout: index
 
 ## Mirrored Blockly
 * [Mirrored Blockly](examples/mirror-demo/index.html)
-
-## Plane
-* [Plane](examples/plane-demo/index.html)

@@ -1,19 +1,15 @@
----
-title: "Generate JavaScript"
-description: "Turn blocks into code and execute it."
-files:
-  - "index.html"
-  - "./node_modules/blockly/*_compressed.js"
-  - "./node_modules/blockly/*_compressed.js.map"
-  - "./node_modules/blockly/msg/en.js"
-pageRoot: "examples/generator-demo"
-
----
 <!DOCTYPE html>
 <html>
 <head>
+  <!-- INJECTED HEADER -->
+  <meta name="viewport" content="width=device-width,maximum-scale=2">
+  <link rel="icon" type="image/x-icon" href="/blockly-samples/favicon.ico" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,500,500italic,700,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="/blockly-samples/css/custom.css"/>
+  <!-- END INJECTED HEADER -->
   <meta charset="utf-8">
-  <title>Blockly Demo: Generating JavaScript</title>
+  <title>Generate JavaScript</title>
   <script src="./node_modules/blockly/blockly_compressed.js"></script>
   <script src="./node_modules/blockly/blocks_compressed.js"></script>
   <script src="./node_modules/blockly/javascript_compressed.js"></script>
@@ -30,7 +26,28 @@ pageRoot: "examples/generator-demo"
     }
   </style>
 </head>
-<body>
+<body class="root">
+      
+  <!-- NAV BAR -->
+  <nav id="toolbar">
+    <a href="/blockly-samples" id="arrow-back">
+      <i class="material-icons">close</i>
+      <img src="https://blocklycodelabs.dev/images/logo_knockout.png" class="logo-devs"
+        alt="Blockly sample" />
+    </a>
+
+    <div class="title-grow">
+      <div class="title">Generate JavaScript</div>
+      <div class="subtitle">Turn blocks into code and execute it.</div>
+    </div>
+    
+    <a href="https://github.com/google/blockly-samples/blob/master/examples/generator-demo" class="button" target="_blank">View code</a>
+  </nav>
+  <!-- END NAV BAR -->
+      <main id="main" class="has-tabs">
+        <div class="drop-shadow"></div>
+        
+        
   <p>This is a simple demo of generating code from blocks and running
   the code using eval.</p>
 
@@ -43,93 +60,204 @@ pageRoot: "examples/generator-demo"
 
   <div id="blocklyDiv" style="height: 480px; width: 600px;"></div>
 
-  <xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display: none">
-    <category name="Logic" colour="%{BKY_LOGIC_HUE}">
-      <block type="controls_if"></block>
-      <block type="logic_compare"></block>
-      <block type="logic_operation"></block>
-      <block type="logic_negate"></block>
-      <block type="logic_boolean"></block>
-    </category>
-    <category name="Loops" colour="%{BKY_LOOPS_HUE}">
-      <block type="controls_repeat_ext">
-        <value name="TIMES">
-          <block type="math_number">
-            <field name="NUM">10</field>
-          </block>
-        </value>
-      </block>
-      <block type="controls_whileUntil"></block>
-    </category>
-    <category name="Math" colour="%{BKY_MATH_HUE}">
-      <block type="math_number">
-        <field name="NUM">123</field>
-      </block>
-      <block type="math_arithmetic"></block>
-      <block type="math_single"></block>
-    </category>
-    <category name="Text" colour="%{BKY_TEXTS_HUE}">
-      <block type="text"></block>
-      <block type="text_length"></block>
-      <block type="text_print"></block>
-    </category>
-  </xml>
-
-  <xml xmlns="https://developers.google.com/blockly/xml" id="startBlocks" style="display: none">
-    <block type="controls_if" inline="false" x="20" y="20">
-      <mutation else="1"></mutation>
-      <value name="IF0">
-        <block type="logic_compare" inline="true">
-          <field name="OP">EQ</field>
-          <value name="A">
-            <block type="math_arithmetic" inline="true">
-              <field name="OP">MULTIPLY</field>
-              <value name="A">
-                <block type="math_number">
-                  <field name="NUM">6</field>
-                </block>
-              </value>
-              <value name="B">
-                <block type="math_number">
-                  <field name="NUM">7</field>
-                </block>
-              </value>
-            </block>
-          </value>
-          <value name="B">
-            <block type="math_number">
-              <field name="NUM">42</field>
-            </block>
-          </value>
-        </block>
-      </value>
-      <statement name="DO0">
-        <block type="text_print" inline="false">
-          <value name="TEXT">
-            <block type="text">
-              <field name="TEXT">Don't panic</field>
-            </block>
-          </value>
-        </block>
-      </statement>
-      <statement name="ELSE">
-        <block type="text_print" inline="false">
-          <value name="TEXT">
-            <block type="text">
-              <field name="TEXT">Panic</field>
-            </block>
-          </value>
-        </block>
-      </statement>
-    </block>
-  </xml>
-
   <script>
+    var toolbox = {
+        "kind":"categoryToolbox",
+        "contents":[
+          {
+            "kind":"category",
+            "name":"Logic",
+            "categorystyle":"logic_category",
+            "contents":[
+              {
+                "kind":"block",
+                "type":"controls_if"
+              },
+              {
+                "kind":"block",
+                "type":"logic_compare"
+              },
+              {
+                "kind":"block",
+                "type":"logic_operation"
+              },
+              {
+                "kind":"block",
+                "type":"logic_negate"
+              },
+              {
+                "kind":"block",
+                "type":"logic_boolean"
+              }
+            ]
+          },
+          {
+            "kind":"category",
+            "name":"Loops",
+            "categorystyle":"loop_category",
+            "contents":[
+              {
+                "kind":"block",
+                "type":"controls_repeat_ext",
+                "inputs":{
+                  "TIMES":{
+                    "block":{
+                      "type":"math_number",
+                      "fields":{
+                        "NUM":10
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "kind":"block",
+                "type":"controls_whileUntil"
+              }
+            ]
+          },
+          {
+            "kind":"category",
+            "name":"Math",
+            "categorystyle":"math_category",
+            "contents":[
+              {
+                "kind":"block",
+                "type":"math_number",
+                "fields":{
+                  "NUM":123
+                }
+              },
+              {
+                "kind":"block",
+                "type":"math_arithmetic"
+              },
+              {
+                "kind":"block",
+                "type":"math_single"
+              }
+            ]
+          },
+          {
+            "kind":"category",
+            "name":"Text",
+            "categorystyle":"text_category",
+            "contents":[
+              {
+                "kind":"block",
+                "type":"text"
+              },
+              {
+                "kind":"block",
+                "type":"text_length"
+              },
+              {
+                "kind":"block",
+                "type":"text_print"
+              }
+            ]
+          }
+        ]
+      }
+
+
     var demoWorkspace = Blockly.inject('blocklyDiv',
-        {media: 'https://unpkg.com/blockly/media/',
-         toolbox: document.getElementById('toolbox')});
-    Blockly.Xml.domToWorkspace(document.getElementById('startBlocks'),
-                               demoWorkspace);
+        {media: './node_modules/blockly/media/',
+         toolbox: toolbox});
+
+    var startBlocks = {
+        "blocks":{
+          "languageVersion":0,
+          "blocks":[
+            {
+              "type":"controls_if",
+              "inline":false,
+              "extraState":{
+                "hasElse":true
+              },
+              "inputs":{
+                "IF0":{
+                  "block":{
+                    "type":"logic_compare",
+                    "fields":{
+                      "OP":"EQ"
+                    },
+                    "inputs":{
+                      "A":{
+                        "block":{
+                          "type":"math_arithmetic",
+                          "fields":{
+                            "OP":"MULTIPLY"
+                          },
+                          "inputs":{
+                            "A":{
+                              "block":{
+                                "type":"math_number",
+                                "fields":{
+                                  "NUM":6
+                                }
+                              }
+                            },
+                            "B":{
+                              "block":{
+                                "type":"math_number",
+                                "fields":{
+                                  "NUM":7
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "B":{
+                        "block":{
+                          "type":"math_number",
+                          "fields":{
+                            "NUM":42
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "DO0":{
+                  "block":{
+                    "type":"text_print",
+                    "inline":false,
+                    "inputs":{
+                      "TEXT":{
+                        "block":{
+                          "type":"text",
+                          "fields":{
+                            "TEXT":"Don't panic"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "ELSE":{
+                  "block":{
+                    "type":"text_print",
+                    "inline":false,
+                    "inputs":{
+                      "TEXT":{
+                        "block":{
+                          "type":"text",
+                          "fields":{
+                            "TEXT":"Panic"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    Blockly.serialization.workspaces.load(startBlocks, demoWorkspace);
 
     function showCode() {
       // Generate JavaScript code and display it.
@@ -142,7 +270,7 @@ pageRoot: "examples/generator-demo"
       // Generate JavaScript code and run it.
       window.LoopTrap = 1000;
       Blockly.JavaScript.INFINITE_LOOP_TRAP =
-          'if (--window.LoopTrap == 0) throw "Infinite loop.";\n';
+          'if (--window.LoopTrap < 0) throw "Infinite loop.";\n';
       var code = Blockly.JavaScript.workspaceToCode(demoWorkspace);
       Blockly.JavaScript.INFINITE_LOOP_TRAP = null;
       try {
@@ -153,5 +281,36 @@ pageRoot: "examples/generator-demo"
     }
   </script>
 
+</main>
+  
+  <!-- FOOTER  -->
+  <footer id="footer">
+    <div class="footer-wrapper site-width">
+      <div class="link-list">
+        <label>Developer Resources</label>
+        <ul>
+          <li><a target="_blank" href="https://developers.google.com/blockly/guides/overview/">Developer Docs</a></li>
+          <li><a target="_blank" href="https://blocklycodelabs.dev/">Codelabs</a></li>
+          <li><a target="_blank" href="https://blockly-demo.appspot.com/static/demos/blockfactory/index.html">Developer
+              Tools</a></li>
+        </ul>
+      </div>
+      <div class="link-list">
+        <label>Github</label>
+        <ul>
+          <li><a target="_blank" href="https://github.com/google/blockly/">Blockly Sources</a></li>
+          <li><a target="_blank" href="https://github.com/google/blockly-samples/">Blockly Samples</a></li>
+        </ul>
+      </div>
+      <div class="link-list">
+        <label>Support</label>
+        <ul>
+          <li><a target="_blank" href="https://groups.google.com/forum/#!forum/blockly/">Support</a></li>
+        </ul>
+        <div>Published with <a href="https://pages.github.com">GitHub Pages</a></div>
+      </div>
+    </div>
+  </footer>
+  <!-- END FOOTER -->
 </body>
 </html>

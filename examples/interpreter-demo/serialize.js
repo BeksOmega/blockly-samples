@@ -16,20 +16,29 @@ var NODE_CONSTRUCTOR;
 var NODE_LOC_CONSTRUCTOR;
 var LINE_LOC_CONSTRUCTOR;
 
-var LOC_REGEX = /^(\d*):(\d*)-(\d*):(\d*) ?(.*)$/;
-
 /**
- * All non-primitives in the interpreter.
+ * All non-primitives in the interpreter as an Array.
  * @type {!Array<!Object>}
  */
- var objectList = [];
+var objectList = [];
+
+/**
+ * A Map mapping non-primitves their corresponding indices in objectList.
+ * Doubles the speed of serialisation if ES6's Map is available.
+ * @type {Map|undefined}
+ */
+var objectMap;
+if (typeof Map === 'function') {
+  objectMap = new Map();
+}
+
 
 /**
  * Inspect an interpreter and record the constructors used to create new nodes.
  * @param {!Interpreter} interpreter JS-Interpreter instance.
  * @private
  */
-function recordAcornConstructons_(interpreter) {
+function recordAcornConstructors_(interpreter) {
   // Constructors for objects within Acorn.
   if (!interpreter.ast) {
     // The 'ast' property has been renamed by the compiler.
@@ -57,9 +66,10 @@ function deserialize(json, interpreter) {
     // Require native functions to be present.
     throw Error('Interpreter must be initialized prior to deserialization.');
   }
-  recordAcornConstructons_(interpreter);
+  recordAcornConstructors_(interpreter);
   // Find all native functions in existing interpreter.
   objectList = [];
+  objectMap && objectMap.clear();
   objectHunt_(stack);
   var functionMap = Object.create(null);
   for (var i = 0; i < objectList.length; i++) {
@@ -82,7 +92,9 @@ function deserialize(json, interpreter) {
   for (var prop in root) {
     interpreter[prop] = root[prop];
   }
-  objectList = [];  // Garbage collect.
+  // Garbage collect.
+  objectList = [];
+  objectMap && objectMap.clear();
 }
 
 /**
@@ -90,7 +102,7 @@ function deserialize(json, interpreter) {
  * But don't populate its properties yet.
  * @param {!Object} jsonObj JSON description of object.
  * @param {!Object} functionMap Map of ID to native functions.
- * @return {!Object} Stub of real object.
+ * @returns {!Object} Stub of real object.
  * @private
  */
  function createObjectStub_(jsonObj, functionMap) {
@@ -130,32 +142,48 @@ function deserialize(json, interpreter) {
       delete obj.end;
       var locText = jsonObj['loc'];
       if (locText) {
-        var loc = new NODE_LOC_CONSTRUCTOR();
-        var m = locText.match(LOC_REGEX);
-        var locStart = null;
-        if (m[1] || m[2]) {
-          locStart = new LINE_LOC_CONSTRUCTOR();
-          locStart.line = Number(m[1]);
-          locStart.column = Number(m[2]);
-        }
-        loc.start = locStart;
-        var locEnd = null;
-        if (m[3] || m[4]) {
-          locEnd = new LINE_LOC_CONSTRUCTOR();
-          locEnd.line = Number(m[3]);
-          locEnd.column = Number(m[4]);
-        }
-        loc.end = locEnd;
-        if (m[5]) {
-          loc.source = decodeURI(m[5]);
-        } else {
-          delete loc.source;
-        }
-        obj.loc = loc;
+        obj.loc = decodeLoc_(locText);
       }
       return obj;
   }
   throw TypeError('Unknown type: ' + jsonObj['type']);
+}
+
+var LOC_REGEX = /^(\d*):(\d*)-(\d*):(\d*) ?(.*)$/;
+
+/**
+ * Turn a serialized string '1:0-4:21 code' into a location object:
+ * {
+ *   start: {line 1, column: 0},
+ *   end: {line 4, column: 21},
+ *   source: "code"
+ * }
+ * @param {string} locText Serialized location.
+ * @returns {!Object} Location object.
+ */
+function decodeLoc_(locText) {
+  var loc = new NODE_LOC_CONSTRUCTOR();
+  var m = locText.match(LOC_REGEX);
+  var locStart = null;
+  if (m[1] || m[2]) {
+    locStart = new LINE_LOC_CONSTRUCTOR();
+    locStart.line = Number(m[1]);
+    locStart.column = Number(m[2]);
+  }
+  loc.start = locStart;
+  var locEnd = null;
+  if (m[3] || m[4]) {
+    locEnd = new LINE_LOC_CONSTRUCTOR();
+    locEnd.line = m[3] ? Number(m[3]) : Number(m[1]);
+    locEnd.column = Number(m[4]);
+  }
+  loc.end = locEnd;
+  if (m[5]) {
+    loc.source = decodeURI(m[5]);
+  } else {
+    delete loc.source;
+  }
+  return loc;
 }
 
 /**
@@ -212,7 +240,7 @@ function populateObject_(jsonObj, obj) {
  * Most values are themselves.  But objects are references, and Infinity, NaN,
  * -0 and undefined are specially encoded.
  * @param {*} value Serialized value.
- * @return {*} Real value.
+ * @returns {*} Real value.
  * @private
  */
  function decodeValue_(value) {
@@ -226,15 +254,13 @@ function populateObject_(jsonObj, obj) {
       }
       return value;
     }
-    if ((data = value['Number'])) {
-      // Special number: {'Number': 'Infinity'}
-      return Number(data);
-    }
     if ((data = value['Value'])) {
-      // Special value: {'Value': 'undefined'}
       if (value['Value'] === 'undefined') {
+        // Special value: {'Value': 'undefined'}
         return undefined;
       }
+      // Special number: 'Infinity', '-Infinity', 'NaN', '-0'
+      return Number(data);
     }
   }
   return value;
@@ -243,7 +269,7 @@ function populateObject_(jsonObj, obj) {
 /**
  * Generate JSON that completely describes an interpreter's state.
  * @param {!Interpreter} interpreter JS-Interpreter instance to serialize.
- * @return {string} Serialized JSON.
+ * @returns {string} Serialized JSON.
  */
 function serialize(interpreter) {
   // Shallow-copy all properties of interest onto a root object.
@@ -272,10 +298,11 @@ function serialize(interpreter) {
     root[properties[i]] = interpreter[properties[i]];
   }
 
-  recordAcornConstructons_(interpreter);
+  recordAcornConstructors_(interpreter);
   // Find all objects.
   objectList = [];
-  objectHunt_(root, objectList);
+  objectMap && objectMap.clear();
+  objectHunt_(root);
   // Serialize every object.
   var json = [];
   for (var i = 0; i < objectList.length; i++) {
@@ -292,9 +319,8 @@ function serialize(interpreter) {
         if (obj === Interpreter.SCOPE_REFERENCE) {
           jsonObj['type'] = 'ScopeReference';
           continue;  // No need to index properties.
-        } else {
-          jsonObj['type'] = 'Object';
         }
+        jsonObj['type'] = 'Object';
         break;
       case Function.prototype:
         jsonObj['type'] = 'Function';
@@ -344,24 +370,7 @@ function serialize(interpreter) {
     for (var j = 0; j < names.length; j++) {
       var name = names[j];
       if (jsonObj['type'] === 'Node' && name === 'loc') {
-        // Compactly serialize the location objects on a Node.
-        var loc = obj.loc;
-        var locText = '';
-        if (loc.start) {
-          locText += loc.start.line + ':' + loc.start.column;
-        } else {
-          locText += ':';
-        }
-        locText += '-';
-        if (loc.end) {
-          locText += loc.end.line + ':' + loc.end.column;
-        } else {
-          locText += ':';
-        }
-        if (loc.source !== undefined) {
-          locText += ' ' + encodeURI(loc.source);
-        }
-        jsonObj['loc'] = locText;
+        jsonObj['loc'] = encodeLoc_(obj.loc);
       } else {
         var descriptor = Object.getOwnPropertyDescriptor(obj, name);
         props[name] = encodeValue_(descriptor.value);
@@ -401,8 +410,43 @@ function serialize(interpreter) {
       jsonObj['setter'] = setter;
     }
   }
-  objectList = [];  // Garbage collect.
+  // Garbage collect.
+  objectList = [];
+  objectMap && objectMap.clear();
   return json;
+}
+
+/**
+ * Compactly serialize the location objects on a Node:
+ * {
+ *   start: {line 1, column: 0},
+ *   end: {line 4, column: 21},
+ *   source: "code"
+ * }
+ * into a string like this: '1:0-4:21 code'
+ * @param {!Object} loc Location object.
+ * @returns {string} Serialized location.
+ */
+function encodeLoc_(loc) {
+  var locText = '';
+  if (loc.start) {
+    locText += loc.start.line + ':' + loc.start.column;
+  } else {
+    locText += ':';
+  }
+  locText += '-';
+  if (loc.end) {
+    if (!loc.start || loc.start.line !== loc.end.line) {
+      locText += loc.end.line;
+    }
+    locText += ':' + loc.end.column;
+  } else {
+    locText += ':';
+  }
+  if (loc.source !== undefined) {
+    locText += ' ' + encodeURI(loc.source);
+  }
+  return locText;
 }
 
 /**
@@ -410,12 +454,12 @@ function serialize(interpreter) {
  * Most values are themselves.  But objects are references, and Infinity, NaN,
  * -0 and undefined are specially encoded.
  * @param {*} value Real value.
- * @return {*} Serialized value.
+ * @returns {*} Serialized value.
  */
  function encodeValue_(value) {
   if (value && (typeof value === 'object' || typeof value === 'function')) {
-    var ref = objectList.indexOf(value);
-    if (ref === -1) {
+    var ref = objectMap ? objectMap.get(value) : objectList.indexOf(value);
+    if (ref === undefined || ref === -1) {
       throw RangeError('Object not found in table.');
     }
     return {'#': ref};
@@ -425,13 +469,13 @@ function serialize(interpreter) {
   }
   if (typeof value === 'number') {
     if (value === Infinity) {
-      return {'Number': 'Infinity'};
+      return {'Value': 'Infinity'};
     } else if (value === -Infinity) {
-      return {'Number': '-Infinity'};
+      return {'Value': '-Infinity'};
     } else if (isNaN(value)) {
-      return {'Number': 'NaN'};
+      return {'Value': 'NaN'};
     } else if (1 / value === -Infinity) {
-      return {'Number': '-0'};
+      return {'Value': '-0'};
     }
   }
   return value;
@@ -444,9 +488,10 @@ function serialize(interpreter) {
  */
 function objectHunt_(node) {
   if (node && (typeof node === 'object' || typeof node === 'function')) {
-    if (objectList.indexOf(node) !== -1) {
+    if (objectMap ? objectMap.has(node) : objectList.indexOf(node) !== -1) {
       return;
     }
+    objectMap && objectMap.set(node, objectList.length);
     objectList.push(node);
     if (typeof node === 'object') {  // Recurse.
       var isAcornNode =

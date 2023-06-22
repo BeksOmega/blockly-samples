@@ -1,35 +1,15 @@
----
-title: "JS Interpreter"
-files:
-  - "index.html"
-  - "async-execution.html"
-  - "backwards.html"
-  - "step-execution.html"
-  - "acorn_interpreter.js"
-  - "acorn.js"
-  - "interpreter.js"
-  - "serialize.js"
-  - "diff_match_patch.js"
-  - "toolbox.js"
-  - "wait_block.js"
-  - "./node_modules/blockly/*_compressed.js"
-  - "./node_modules/blockly/*_compressed.js.map"
-  - "./node_modules/blockly/msg/en.js"
-pages:
-  - label: "Step Execution"
-    link: "step-execution.html"
-  - label: "Async Execution"
-    link: "async-execution.html"
-  - label: "Backwards Execution"
-    link: "backwards.html"
-pageRoot: "examples/interpreter-demo"
-
----
 <!DOCTYPE html>
 <html>
 <head>
+  <!-- INJECTED HEADER -->
+  <meta name="viewport" content="width=device-width,maximum-scale=2">
+  <link rel="icon" type="image/x-icon" href="/blockly-samples/favicon.ico" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,500,500italic,700,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="/blockly-samples/css/custom.css"/>
+  <!-- END INJECTED HEADER -->
   <meta charset="utf-8">
-  <title>Blockly Demo: Step Execution with JS-Interpreter</title>
+  <title>JS Interpreter</title>
   <script src="toolbox.js"></script>
   <!-- acorn_interpreter.js is copied from the JS-Interpreter project
     without modification. -->
@@ -50,13 +30,58 @@ pageRoot: "examples/interpreter-demo"
     }
   </style>
 </head>
-<body>
+<body class="root">
+      
+  <!-- NAV BAR -->
+  <nav id="toolbar">
+    <a href="/blockly-samples" id="arrow-back">
+      <i class="material-icons">close</i>
+      <img src="https://blocklycodelabs.dev/images/logo_knockout.png" class="logo-devs"
+        alt="Blockly sample" />
+    </a>
+
+    <div class="title-grow">
+      <div class="title">JS Interpreter</div>
+      
+    </div>
+    
+    <a href="https://github.com/google/blockly-samples/blob/master/examples/interpreter-demo" class="button" target="_blank">View code</a>
+  </nav>
+  <!-- END NAV BAR -->
+      <main id="main" class="has-tabs">
+        <div class="drop-shadow"></div>
+        
+  <!-- PAGE TABS -->
+  <ul id="tabs">
+  
+    <li>
+      <a href="/blockly-samples/examples/interpreter-demo/step-execution.html">
+        Step Execution
+      </a>
+    </li>
+    
+    <li>
+      <a href="/blockly-samples/examples/interpreter-demo/async-execution.html">
+        Async Execution
+      </a>
+    </li>
+    
+    <li>
+      <a href="/blockly-samples/examples/interpreter-demo/backwards.html">
+        Backwards Execution
+      </a>
+    </li>
+    
+  </ul>
+  <!-- END PAGE TABS -->
+        
   <h1>Step Execution with JS-Interpreter</h1>
 
   <p>This is a demo of executing code step-by-step with a sandboxed JavaScript interpreter.</p>
 
-  <p>The generator's <code>Blockly.JavaScript.STATEMENT_PREFIX</code> is assigned <code>'highlightBlock(%1);\n'</code>,
-  where <code>%1</code> is the block id. The call to <code>highlightBlock()</code> will highlight the identified block
+  <p>The generator's <code>Blockly.JavaScript.STATEMENT_PREFIX</code> is assigned
+  <code>'highlightBlock(%1);\n'</code>, where <code>%1</code> is the block ID.
+  The call to <code>highlightBlock()</code> will highlight the identified block
   and set the variable <code>highlightPause</code> to <code>true</code>.</p>
 
   <p>Each press of the "Step JavaScript" button will run the interpreter one
@@ -64,7 +89,7 @@ pageRoot: "examples/interpreter-demo"
   That is, until <code>highlightBlock()</code> has highlighted the block that
   will be executed on the next step.</p>
 
-  <p>&rarr; <a href="https://developers.google.com/blockly/guides/configure-blockly/web/running-javascript#js_interpreter">More info on running code with JS-Interpreter</a></p>
+  <p>&rarr; <a href="https://developers.google.com/blockly/guides/app-integration/running-javascript#js-interpreter">More info on running code with JS-Interpreter</a></p>
 
   <p>
     <button onclick="stepCode()" id="stepButton">Step JavaScript</button>
@@ -78,72 +103,113 @@ pageRoot: "examples/interpreter-demo"
     </textarea>
   </div>
 
-  <xml xmlns="https://developers.google.com/blockly/xml" id="startBlocks" style="display: none">
-    <block type="variables_set" id="set_n_initial" inline="true" x="20" y="20">
-      <field name="VAR">n</field>
-      <value name="VALUE">
-        <block type="math_number">
-          <field name="NUM">1</field>
-        </block>
-      </value>
-      <next>
-        <block type="controls_repeat_ext" id="repeat" inline="true">
-          <value name="TIMES">
-            <block type="math_number">
-              <field name="NUM">4</field>
-            </block>
-          </value>
-          <statement name="DO">
-            <block type="variables_set" id="set_n_update" inline="true">
-              <field name="VAR">n</field>
-              <value name="VALUE">
-                <block type="math_arithmetic" inline="true">
-                  <field name="OP">MULTIPLY</field>
-                  <value name="A">
-                    <block type="variables_get">
-                      <field name="VAR">n</field>
-                    </block>
-                  </value>
-                  <value name="B">
-                    <block type="math_number">
-                      <field name="NUM">2</field>
-                    </block>
-                  </value>
-                </block>
-              </value>
-              <next>
-                <block type="text_print" id="print">
-                  <value name="TEXT">
-                    <block type="variables_get">
-                      <field name="VAR">n</field>
-                    </block>
-                  </value>
-                </block>
-              </next>
-            </block>
-          </statement>
-        </block>
-      </next>
-    </block>
-  </xml>
-
   <script>
+    const startBlocks = {
+      "blocks": {
+        "blocks": [
+          {
+            "type": "variables_set",
+            "x": 20,
+            "y": 20,
+            "inline": true,
+            "fields": {
+              "VAR": {"id": "n"}
+            },
+            "inputs": {
+              "VALUE": {
+                "block": {
+                  "type": "math_number",
+                  "fields": {"NUM": 1}
+                }
+              }
+            },
+            "next": {
+              "block": {
+                "type": "controls_repeat_ext",
+                "inline": true,
+                "inputs": {
+                  "TIMES": {
+                    "block": {
+                      "type": "math_number",
+                      "fields": {"NUM": 4}
+                    }
+                  },
+                  "DO": {
+                    "block": {
+                      "type": "variables_set",
+                      "inline": true,
+                      "fields": {
+                        "VAR": {"id": "n"}
+                      },
+                      "inputs": {
+                        "VALUE": {
+                          "block": {
+                            "type": "math_arithmetic",
+                            "fields": {"OP": "MULTIPLY"},
+                            "inputs": {
+                              "A": {
+                                "block": {
+                                  "type": "variables_get",
+                                  "fields": {
+                                    "VAR": {"id": "n"}
+                                  }
+                                }
+                              },
+                              "B": {
+                                "block": {
+                                  "type": "math_number",
+                                  "fields": {"NUM": 2}
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "next": {
+                        "block": {
+                          "type": "text_print",
+                          "inputs": {
+                            "TEXT": {
+                              "block": {
+                                "type": "variables_get",
+                                "fields": {
+                                  "VAR": {"id": "n"}
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "variables": [
+        {
+          "name": "n",
+          "id": "n"
+        }
+      ]
+    };
 
-    var demoWorkspace = Blockly.inject('blocklyDiv',
-        {media: 'https://unpkg.com/blockly/media/',
+    const demoWorkspace = Blockly.inject('blocklyDiv',
+        {media: './node_modules/blockly/media/',
          toolbox: toolboxJson});
     Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
     Blockly.JavaScript.addReservedWords('highlightBlock');
-    Blockly.Xml.domToWorkspace(document.getElementById('startBlocks'),
-                               demoWorkspace);
+    Blockly.serialization.workspaces.load(startBlocks, demoWorkspace)
 
-    var outputArea = document.getElementById('output');
-    var stepButton = document.getElementById('stepButton');
-    var myInterpreter = null;
+    const outputArea = document.getElementById('output');
+    const stepButton = document.getElementById('stepButton');
+    let myInterpreter = null;
 
     function initApi(interpreter, globalObject) {
       // Add an API function for the alert() block, generated for "text_print" blocks.
-      var wrapperAlert = function alert(text) {
+      const wrapperAlert = function alert(text) {
         text = arguments.length ? text : '';
         outputArea.value += '\n' + text;
       };
@@ -151,14 +217,14 @@ pageRoot: "examples/interpreter-demo"
           interpreter.createNativeFunction(wrapperAlert));
 
       // Add an API function for the prompt() block.
-      var wrapperPrompt = function prompt(text) {
+      const wrapperPrompt = function prompt(text) {
         return window.prompt(text);
       };
       interpreter.setProperty(globalObject, 'prompt',
           interpreter.createNativeFunction(wrapperPrompt));
 
       // Add an API function for highlighting blocks.
-      var wrapperHighlight = function(id) {
+      const wrapperHighlight = function(id) {
         id = String(id || '');
         return highlightBlock(id);
       };
@@ -167,7 +233,7 @@ pageRoot: "examples/interpreter-demo"
     }
 
     // Each step will run the interpreter until the highlightPause is true.
-    var highlightPause = false;
+    let highlightPause = false;
 
     function highlightBlock(id) {
       demoWorkspace.highlightBlock(id);
@@ -189,7 +255,7 @@ pageRoot: "examples/interpreter-demo"
         // First statement of this code.
         // Clear the program output.
         resetStepUi(true);
-        var latestCode = Blockly.JavaScript.workspaceToCode(demoWorkspace);
+        const latestCode = Blockly.JavaScript.workspaceToCode(demoWorkspace);
         myInterpreter = new Interpreter(latestCode, initApi);
 
         // And then show generated code in an alert.
@@ -203,9 +269,10 @@ pageRoot: "examples/interpreter-demo"
         return;
       }
       highlightPause = false;
+      let hasMoreCode;
       do {
         try {
-          var hasMoreCode = myInterpreter.step();
+          hasMoreCode = myInterpreter.step();
         } finally {
           if (!hasMoreCode) {
             // Program complete, no more code to execute.
@@ -234,5 +301,36 @@ pageRoot: "examples/interpreter-demo"
       }
     });
   </script>
+</main>
+  
+  <!-- FOOTER  -->
+  <footer id="footer">
+    <div class="footer-wrapper site-width">
+      <div class="link-list">
+        <label>Developer Resources</label>
+        <ul>
+          <li><a target="_blank" href="https://developers.google.com/blockly/guides/overview/">Developer Docs</a></li>
+          <li><a target="_blank" href="https://blocklycodelabs.dev/">Codelabs</a></li>
+          <li><a target="_blank" href="https://blockly-demo.appspot.com/static/demos/blockfactory/index.html">Developer
+              Tools</a></li>
+        </ul>
+      </div>
+      <div class="link-list">
+        <label>Github</label>
+        <ul>
+          <li><a target="_blank" href="https://github.com/google/blockly/">Blockly Sources</a></li>
+          <li><a target="_blank" href="https://github.com/google/blockly-samples/">Blockly Samples</a></li>
+        </ul>
+      </div>
+      <div class="link-list">
+        <label>Support</label>
+        <ul>
+          <li><a target="_blank" href="https://groups.google.com/forum/#!forum/blockly/">Support</a></li>
+        </ul>
+        <div>Published with <a href="https://pages.github.com">GitHub Pages</a></div>
+      </div>
+    </div>
+  </footer>
+  <!-- END FOOTER -->
 </body>
 </html>
