@@ -33,6 +33,7 @@ export class ProcedureParameterCreate extends ProcedureParameterBase {
       parameter: ObservableParameterModel,
       readonly index: number) {
     super(workspace, procedure, parameter);
+    this.recordUndo = false;
   }
 
   /**

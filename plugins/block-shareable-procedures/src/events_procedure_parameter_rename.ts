@@ -45,6 +45,7 @@ export class ProcedureParameterRename extends ProcedureParameterBase {
       newName?: string,
       newVarId?: string) {
     super(workspace, procedure, parameter);
+    this.recordUndo = false;
 
     this.newName = newName ?? parameter.getName();
     this.newVarId = newVarId ?? parameter.getVariableModel().getId();

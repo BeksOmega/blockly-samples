@@ -31,6 +31,7 @@ export class ProcedureParameterDelete extends ProcedureParameterBase {
       parameter: Blockly.procedures.IParameterModel,
       readonly index: number) {
     super(workspace, procedure, parameter);
+    this.recordUndo = false;
   }
 
   /**

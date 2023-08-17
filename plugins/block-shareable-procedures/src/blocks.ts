@@ -464,7 +464,14 @@ const procedureDefMutator = {
     }
 
     const params = state['params'];
-    if (params && !this.getProcedureModel().getParameters().length) {
+    if (params) {
+      const newIds = new Set(params.map((p) => p.id));
+      const oldParams = this.getProcedureModel().getParameters();
+      for (let i = oldParams.length - 1; i >= 0; i--) {
+        if (!newIds.has(oldParams[i].getId())) {
+          this.getProcedureModel().deleteParameter(i);
+        }
+      }
       for (let i = 0; i < params.length; i++) {
         const {name, id, paramId} = params[i];
         this.getProcedureModel().insertParameter(
