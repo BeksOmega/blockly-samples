@@ -58,3 +58,23 @@ ws.addChangeListener((e) => {
   }
   runCode();
 });
+
+
+const url = `https://generativelanguage.googleapis.com/v1beta3/models/text-bison-001:generateText?key=${AI_TOKEN}`
+
+async function test() {
+  const options = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      "prompt": { "text": "Write a story about a magic backpack"} 
+    }),
+  };
+   
+  const response = await fetch(url, options);
+  const data = await response.json();
+  console.log(data);
+}
+test();
